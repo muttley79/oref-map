@@ -736,7 +736,8 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     // Green — all-clear / event over (fades out)
     if (title.includes('האירוע הסתיים') ||
         title.includes('ניתן לצאת') ||
-        title.includes('החשש הוסר')) {
+        title.includes('החשש הוסר') ||
+        title === 'עדכון') {
       return 'green';
     }
 
@@ -833,22 +834,39 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     }
   }
 
-  var STATE_LABELS = { red: 'ירי רקטות', orange: 'כטב"מ', yellow: 'התרעה', green: 'הסתיים' };
+  var TITLE_LABELS = {
+    'ירי רקטות וטילים': 'אזעקת רקטות וטילים',
+    'חדירת כלי טיס עוין': 'חדירת כטב״מ',
+    'נשק לא קונבנציונלי': 'נשק לא קונבנציונלי',
+    'חדירת מחבלים': 'חדירת מחבלים',
+    'בדקות הקרובות צפויות להתקבל התרעות באזורך': 'תיתכן אזעקת טילים בדקות הקרובות',
+    'ירי רקטות וטילים - האירוע הסתיים': 'רקטות וטילים - הסתיים',
+    'חדירת כלי טיס עוין - האירוע הסתיים': 'כטב״מ - האירוע הסתיים',
+    'ניתן לצאת מהמרחב המוגן': 'ניתן לצאת מהמרחב המוגן',
+    'ניתן לצאת מהמרחב המוגן אך יש להישאר בקרבתו': 'ניתן לצאת מהמרחב המוגן',
+    'חדירת מחבלים - החשש הוסר': 'חדירת מחבלים - החשש הוסר',
+    'עדכון': 'ניתן לצאת מהמרחב המוגן',
+  };
+
+  function displayLabel(title) {
+    var norm = (title || '').replace(/\s+/g, ' ').trim();
+    return TITLE_LABELS[norm] || ('\u26A0 ' + norm);
+  }
 
   function buildPopupHtml(name) {
     var entries = (locationHistory[name] || []).slice()
       .sort(function(a, b) { return (b.alertDate || '').localeCompare(a.alertDate || ''); });
     var rows = entries.map(function(e, i) {
       var color = COLORS[e.state] || '#888';
+      var label = displayLabel(e.title);
       var time = e.alertDate ? e.alertDate.slice(11, 16) : '';
       var border = i < entries.length - 1 ? 'border-bottom:1px solid #eee;' : '';
-      return '<div style="padding:4px 0;' + border + 'display:flex;align-items:baseline;gap:8px">' +
-        (time ? '<span style="color:#aaa;font-size:12px;white-space:nowrap">' + time + '</span>' : '') +
-        '<span style="color:#444;font-size:13px;flex:1;text-align:right">' + e.title + '</span>' +
-        '<span style="color:' + color + ';font-weight:bold;white-space:nowrap">' + (STATE_LABELS[e.state] || e.state) + '</span>' +
+      return '<div style="padding:4px 0;' + border + 'display:flex;align-items:baseline;gap:8px;direction:rtl">' +
+        (time ? '<span style="color:' + color + ';font-size:12px;white-space:nowrap;font-weight:bold">' + time + '</span>' : '') +
+        '<span style="color:#444;font-size:13px;flex:1;text-align:right">' + label + '</span>' +
       '</div>';
     }).join('');
-    return '<div style="direction:ltr;width:min(360px,85vw)"><b style="float:right">' + name + '</b><div style="clear:both"></div>' +
+    return '<div style="direction:rtl;width:min(360px,85vw);text-align:right"><b>' + name + '</b>' +
       (rows ? '<div style="margin-top:6px">' + rows + '</div>' : '<p style="color:#888;margin-top:6px">אין היסטוריה</p>') +
       '</div>';
   }
@@ -869,7 +887,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   // --- Process alerts ---
   function processLiveAlert(alert) {
     if (!alert || !alert.data || !alert.title) return;
-    var title = alert.title.replace(/\s+/g, ' ').trim();
+    var title = (alert.desc || alert.title).replace(/\s+/g, ' ').trim();
     var state = classifyTitle(title);
     if (state !== 'green') lastDangerTime = Date.now();
     var locations = alert.data;
