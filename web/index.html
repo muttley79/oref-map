@@ -354,7 +354,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
 
 <div id="status">
   <span class="indicator indicator-ok" id="statusDot"></span>
-  <span id="statusText">Connecting...</span>
+  <span id="statusText">מתחבר...</span>
 </div>
 <div id="errorDetail"></div>
 
@@ -1000,7 +1000,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
         liveErrors++;
         lastErrorMsg = 'Live alerts: ' + err.message;
         if (liveErrors > 3) {
-          setStatus(false, 'Error');
+          setStatus(false, 'בעיית תקשורת לפיקוד העורף. מנסה שוב...');
         }
         console.error('Live poll error:', err);
       });
@@ -1051,7 +1051,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
         historyErrors++;
         lastErrorMsg = 'Alert history: ' + err.message;
         if (historyErrors > 3) {
-          setStatus(false, 'Error');
+          setStatus(false, 'תקלה בטעינת התראות קודמות. מנסה שוב...');
         }
         console.error('History fetch error:', err);
         if (onDone) onDone();
@@ -1345,7 +1345,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
       })
       .catch(function(err) {
         console.error('Failed to load cities_geo.json:', err);
-        setStatus(false, 'Failed to load geo data');
+        setStatus(false, 'אירעה שגיאה בטעינת נתונים גאוגרפיים');
       });
   }
 
