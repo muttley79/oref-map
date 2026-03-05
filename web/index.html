@@ -277,11 +277,36 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   font-size: 13px;
   font-weight: bold;
   white-space: nowrap;
-  min-width: 56px;
+  min-width: 105px;
   text-align: center;
   flex-shrink: 0;
 }
 #timeline-label.live-label { color: #00cc00; }
+#timeline-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: #888;
+}
+#timeline-close:hover { color: #333; }
+#timeline-live-btn {
+  background: #00cc00;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+#timeline-live-btn:hover { background: #00aa00; }
+#timeline-live-btn.hidden { display: none; }
 
 @media (max-width: 480px) {
   #legend {
@@ -391,9 +416,11 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
 <button id="test-all-clear-btn" title="בדיקת צליל רגיעה">✅</button>
 
 <div id="timeline-bar">
+  <button id="timeline-close" title="סגור ציר זמן">&#10005;</button>
   <button id="timeline-play" title="נגן ציר זמן">&#9654;</button>
   <input type="range" id="timeline-slider" min="0" max="1000" value="1000" step="1">
   <span id="timeline-label">LIVE</span>
+  <button id="timeline-live-btn" title="חזור לשידור חי">LIVE</button>
 </div>
 
 <script>
@@ -1224,17 +1251,30 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     var label = document.getElementById('timeline-label');
     var playBtn = document.getElementById('timeline-play');
     var toggleBtn = document.getElementById('timeline-btn');
+    var closeBtn = document.getElementById('timeline-close');
+    var liveBtn = document.getElementById('timeline-live-btn');
 
     if (extendedHistory.length === 0) return; // keep hidden
 
     // Show the toggle button, bar stays hidden until user clicks
     toggleBtn.classList.add('has-data');
     label.classList.add('live-label');
+    liveBtn.classList.add('hidden');
 
     toggleBtn.addEventListener('click', function() {
       var isOpen = bar.classList.toggle('open');
       toggleBtn.classList.toggle('active', isOpen);
       if (!isOpen) enterLiveMode();
+    });
+
+    closeBtn.addEventListener('click', function() {
+      bar.classList.remove('open');
+      toggleBtn.classList.remove('active');
+      enterLiveMode();
+    });
+
+    liveBtn.addEventListener('click', function() {
+      enterLiveMode();
     });
 
     function timeFromSlider(val) {
@@ -1256,6 +1296,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
       slider.value = 1000;
       label.textContent = 'LIVE';
       label.classList.add('live-label');
+      liveBtn.classList.add('hidden');
       stopPlay();
       restoreLiveState();
       updateLiveStatus();
@@ -1267,8 +1308,9 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
         isLiveMode = false;
       }
       currentViewTime = time;
-      label.textContent = formatTime(time);
+      label.textContent = 'בשעה: ' + formatTime(time);
       label.classList.remove('live-label');
+      liveBtn.classList.remove('hidden');
       reconstructStateAt(time);
     }
 
@@ -1317,7 +1359,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
         }
         var newVal = Math.round(((newTime - timelineMin) / (timelineMax - timelineMin)) * 999);
         slider.value = Math.min(newVal, 999);
-        label.textContent = formatTime(newTime);
+        label.textContent = 'בשעה: ' + formatTime(newTime);
         label.classList.remove('live-label');
         currentViewTime = newTime;
         reconstructStateAt(newTime);
