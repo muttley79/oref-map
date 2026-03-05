@@ -821,10 +821,10 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
       if (!isNaN(ts) && Date.now() - ts > 12 * 60 * 60 * 1000) return;
     }
     var arr = locationHistory[name];
-    // Dedup by normalized alertDate + title
-    var normDate = (alertDate || '').replace('T', ' ');
+    // Dedup by alertDate (truncated to minute) + title
+    var normDate = (alertDate || '').replace('T', ' ').slice(0, 16);
     for (var i = 0; i < arr.length; i++) {
-      if ((arr[i].alertDate || '').replace('T', ' ') === normDate && arr[i].title === title) return;
+      if ((arr[i].alertDate || '').replace('T', ' ').slice(0, 16) === normDate && arr[i].title === title) return;
     }
     arr.push({ title: title, alertDate: alertDate, state: state });
     // Refresh popup if it's open for this location
