@@ -86,7 +86,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   left: 5px !important;
 }
 
-#about-backdrop {
+.modal-backdrop {
   display: none;
   position: fixed;
   inset: 0;
@@ -95,9 +95,9 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   justify-content: center;
   align-items: center;
 }
-#about-backdrop.visible { display: flex; }
+.modal-backdrop.visible { display: flex; }
 
-#about-modal {
+.modal-content {
   background: white;
   border-radius: 12px;
   padding: 24px;
@@ -109,11 +109,11 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   font-size: 15px;
   line-height: 1.7;
 }
-#about-modal h2 { margin: 0 0 12px; font-size: 20px; }
-#about-modal p { margin: 0 0 10px; color: #444; }
-#about-modal a { color: #0066cc; }
+.modal-content h2 { margin: 0 0 12px; font-size: 20px; }
+.modal-content p { margin: 0 0 10px; color: #444; }
+.modal-content a { color: #0066cc; }
 
-#about-close {
+.modal-close {
   position: absolute;
   top: 10px;
   left: 10px;
@@ -129,7 +129,15 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   padding: 0;
   border-radius: 4px;
 }
-#about-close:hover { background: #eee; color: #333; }
+.modal-close:hover { background: #eee; color: #333; }
+
+.location-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+.location-item:hover { background: #f5f5f5; }
 
 #sound-btn {
   position: fixed;
@@ -171,6 +179,46 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
 #timeline-btn.has-data { display: block; }
 #timeline-btn:hover { background: #f0f0f0; }
 #timeline-btn.active { background: #e0e0e0; }
+
+#test-danger-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 120px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.92);
+  border: none;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+  padding: 0;
+}
+#test-danger-btn:hover { background: #f0f0f0; }
+
+#test-all-clear-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 168px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.92);
+  border: none;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+  padding: 0;
+}
+#test-all-clear-btn:hover { background: #f0f0f0; }
 
 #timeline-bar {
   display: none;
@@ -245,6 +293,22 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     font-size: 18px;
     line-height: 36px;
   }
+  #test-danger-btn {
+    bottom: 12px;
+    left: 100px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    line-height: 36px;
+  }
+  #test-all-clear-btn {
+    bottom: 12px;
+    left: 144px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    line-height: 36px;
+  }
   #timeline-bar {
     bottom: 60px;
     padding: 6px 10px;
@@ -269,9 +333,9 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   <span id="statusText">Connecting...</span>
 </div>
 
-<div id="about-backdrop">
-  <div id="about-modal">
-    <button id="about-close">&times;</button>
+<div id="about-backdrop" class="modal-backdrop">
+  <div id="about-modal" class="modal-content">
+    <button id="about-close" class="modal-close">&times;</button>
     <h2>אודות מפת העורף</h2>
     <p>מפה המציגה בזמן אמת התרעות פיקוד העורף על גבי מפת ישראל.</p>
     <p>מקור הנתונים: ממשק ה-API הציבורי של פיקוד העורף.</p>
@@ -279,8 +343,25 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   </div>
 </div>
 
+<div id="sound-backdrop" class="modal-backdrop">
+  <div id="sound-modal" class="modal-content">
+    <button id="sound-modal-close" class="modal-close">&times;</button>
+    <h2>הגדרות צליל</h2>
+    <p>בחר מיקום לקבלת התרעות קוליות:</p>
+    <input type="text" id="sound-search" placeholder="חפש יישוב..." dir="rtl" 
+           style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom:12px; font-size:16px;">
+    <div id="sound-results" style="max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:6px; margin-bottom:12px;"></div>
+    <div style="display:flex; gap:10px;">
+      <button id="sound-all-btn" style="flex:1; padding:10px; border:none; background:#eee; border-radius:6px; cursor:pointer; font-weight:bold;">כל הארץ</button>
+      <button id="sound-cancel-btn" style="flex:1; padding:10px; border:none; background:#f5f5f5; border-radius:6px; cursor:pointer;">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <button id="sound-btn" title="השמעת צלילים">🔇</button>
 <button id="timeline-btn" title="ציר זמן">&#128339;</button>
+<button id="test-danger-btn" title="בדיקת צליל סכנה">🚨</button>
+<button id="test-all-clear-btn" title="בדיקת צליל רגיעה">✅</button>
 
 <div id="timeline-bar">
   <button id="timeline-play" title="נגן ציר זמן">&#9654;</button>
@@ -316,10 +397,15 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   var pollErrors = 0;
   var initialized = false;
   var soundMuted = true;
+  var soundLocation = 'all';
   var audioCtx = null;
   var lastSoundTime = 0;
+  var dangerBuffer = null;
 
-  try { soundMuted = localStorage.getItem('oref-sound-muted') !== 'false'; } catch(e) {}
+  try {
+    soundMuted = localStorage.getItem('oref-sound-muted') !== 'false';
+    soundLocation = localStorage.getItem('oref-sound-location') || 'all';
+  } catch(e) {}
 
   // --- Timeline state ---
   var extendedHistory = [];     // sorted ascending by alertDate ms
@@ -353,17 +439,42 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
   function playDangerSound() {
     var ctx = getAudioContext();
     if (!ctx) return;
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(440, ctx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
+
+    function playSequence(buffer) {
+      var half = buffer.duration / 2;
+      var now = ctx.currentTime;
+
+      // 1. First half
+      var s1 = ctx.createBufferSource();
+      s1.buffer = buffer;
+      s1.connect(ctx.destination);
+      s1.start(now, 0, half);
+
+      // 2. Repeat first half
+      var s2 = ctx.createBufferSource();
+      s2.buffer = buffer;
+      s2.connect(ctx.destination);
+      s2.start(now + half, 0, half);
+
+      // 3. Entire file
+      var s3 = ctx.createBufferSource();
+      s3.buffer = buffer;
+      s3.connect(ctx.destination);
+      s3.start(now + (half * 2));
+    }
+
+    if (dangerBuffer) {
+      playSequence(dangerBuffer);
+    } else {
+      fetch('mixkit-clear-announce-tones-2861.wav')
+        .then(function(r) { return r.arrayBuffer(); })
+        .then(function(b) { return ctx.decodeAudioData(b); })
+        .then(function(buffer) {
+          dangerBuffer = buffer;
+          playSequence(dangerBuffer);
+        })
+        .catch(function(err) { console.error('Failed to play danger sound:', err); });
+    }
   }
 
   function playAllClearSound() {
@@ -393,8 +504,14 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     osc2.stop(ctx.currentTime + 0.45);
   }
 
-  function playSoundForState(state) {
+  function playSoundForState(state, locationName) {
     if (!initialized || soundMuted || !isLiveMode) return;
+
+    // Filter by location if a specific one is selected
+    if (soundLocation && soundLocation !== 'all' && locationName !== soundLocation) {
+      return;
+    }
+
     var now = Date.now();
     if (now - lastSoundTime < 500) return;
     lastSoundTime = now;
@@ -534,6 +651,8 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
 
     // ?debug: show clip polygon + all cell outlines
     if (location.search.indexOf('debug') !== -1) {
+      document.getElementById('test-danger-btn').style.display = 'block';
+      document.getElementById('test-all-clear-btn').style.display = 'block';
       var borderLatLngs = ISRAEL_CLIP_RING.map(function(p) { return [p[1], p[0]]; });
       L.polygon(borderLatLngs, {
         color: '#0000ff', fillOpacity: 0, weight: 2, dashArray: '6 4',
@@ -630,7 +749,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
       marker: polygon
     };
 
-    playSoundForState(state);
+    playSoundForState(state, name);
   }
 
   function removeLocation(name) {
@@ -708,6 +827,12 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
       }
     }
   }
+
+  // Expose for debugging/external injection
+  window.injectAlert = function(mockAlert) {
+    console.log('Injecting mock alert:', mockAlert);
+    processLiveAlert(mockAlert);
+  };
 
   function processHistoryEntry(entry) {
     if (!entry || !entry.data || !entry.title) return;
@@ -1148,14 +1273,87 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
     if (e.key === 'Escape') closeAbout();
   });
 
-  // --- Sound button ---
+  // --- Sound control & modal ---
   var soundBtn = document.getElementById('sound-btn');
-  soundBtn.textContent = soundMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
-  soundBtn.addEventListener('click', function() {
-    soundMuted = !soundMuted;
+  var soundBackdrop = document.getElementById('sound-backdrop');
+  var soundSearch = document.getElementById('sound-search');
+  var soundResults = document.getElementById('sound-results');
+
+  function updateSoundButton() {
     soundBtn.textContent = soundMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
-    try { localStorage.setItem('oref-sound-muted', String(soundMuted)); } catch(e) {}
-    if (!soundMuted) getAudioContext();
+    soundBtn.title = soundMuted ? 'השמעת צלילים' : 'צלילים: ' + (soundLocation === 'all' ? 'כל הארץ' : soundLocation);
+  }
+  updateSoundButton();
+
+  function openSoundModal() {
+    soundBackdrop.classList.add('visible');
+    soundSearch.value = '';
+    soundResults.innerHTML = '';
+    soundSearch.focus();
+  }
+
+  function closeSoundModal() {
+    soundBackdrop.classList.remove('visible');
+  }
+
+  function selectSoundLocation(loc) {
+    soundLocation = loc;
+    soundMuted = false;
+    updateSoundButton();
+    try {
+      localStorage.setItem('oref-sound-muted', 'false');
+      localStorage.setItem('oref-sound-location', loc);
+    } catch(e) {}
+    getAudioContext();
+    closeSoundModal();
+  }
+
+  soundBtn.addEventListener('click', function() {
+    if (soundMuted) {
+      openSoundModal();
+    } else {
+      soundMuted = true;
+      updateSoundButton();
+      try { localStorage.setItem('oref-sound-muted', 'true'); } catch(e) {}
+    }
+  });
+
+  document.getElementById('sound-modal-close').addEventListener('click', closeSoundModal);
+  document.getElementById('sound-cancel-btn').addEventListener('click', closeSoundModal);
+  document.getElementById('sound-all-btn').addEventListener('click', function() {
+    selectSoundLocation('all');
+  });
+  soundBackdrop.addEventListener('click', function(e) {
+    if (e.target === this) closeSoundModal();
+  });
+
+  document.getElementById('test-danger-btn').addEventListener('click', function() {
+    playDangerSound();
+  });
+  document.getElementById('test-all-clear-btn').addEventListener('click', function() {
+    playAllClearSound();
+  });
+
+  soundSearch.addEventListener('input', function() {
+    var q = soundSearch.value.trim();
+    if (q.length < 2) {
+      soundResults.innerHTML = '';
+      return;
+    }
+    var matches = cityNames.filter(function(name) {
+      return name.includes(q);
+    }).slice(0, 20);
+    
+    soundResults.innerHTML = matches.map(function(m) {
+      return '<div class="location-item" data-name="' + m + '">' + m + '</div>';
+    }).join('');
+  });
+
+  soundResults.addEventListener('click', function(e) {
+    var item = e.target.closest('.location-item');
+    if (item) {
+      selectSoundLocation(item.getAttribute('data-name'));
+    }
   });
 
   init();
