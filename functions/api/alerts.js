@@ -12,7 +12,7 @@ export async function onRequestGet() {
     status: resp.status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
+      'Cache-Control': resp.headers.get('Cache-Control') || 'public, max-age=2',
       'Access-Control-Allow-Origin': '*',
     },
   });
