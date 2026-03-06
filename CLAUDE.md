@@ -79,5 +79,8 @@ Do **not** use `cat`/`category` for classification — the same number is reused
 ### Dual polling rationale
 The live API is polled every 1s for immediate danger display. The history API is polled every 10s because all-clear events are short-lived in the live API and would be missed — the history API is the reliable source for state transitions to green.
 
+### Geo-blocking
+The Oref APIs geo-block non-Israeli IPs. Our proxy works because Israeli users route through Cloudflare's TLV edge. Users routed through non-Israeli edges will get 403 errors. See `docs/architecture.md` for details.
+
 # currentDate
 Today's date is 2026-03-04.

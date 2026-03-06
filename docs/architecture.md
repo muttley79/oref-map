@@ -43,6 +43,15 @@ The live API is a snapshot — all-clear alerts may only last a few seconds and 
 
 The Oref APIs don't include `Access-Control-Allow-Origin`. Cloudflare Pages Functions add the required headers and forward requests server-side.
 
+### Geo-blocking / Israeli IP requirement
+
+The Oref APIs (particularly `alerts-history.oref.org.il`) geo-block non-Israeli IPs. This was confirmed while building the `oref-logger` project: a Cloudflare Worker cron running from Zurich (`colo=ZRH`) got HTTP 403, while the same code triggered from Israel (`colo=TLV`) succeeded.
+
+This has implications for oref-map:
+- **Cloudflare Pages Functions work** because Israeli users' requests route to Cloudflare's TLV edge, and the proxy egresses from an Israeli IP.
+- **Users whose traffic routes through a non-Israeli Cloudflare edge** (e.g., certain ISPs, VPNs, or CDN misrouting) may get 403 errors from the Oref API through our proxy. At least one user on an Israeli ISP has reported access issues — this geo-routing may be the cause.
+- **The proxy does not control this** — Cloudflare decides which edge to use based on the user's network path.
+
 ## Alert Classification
 
 Alerts are classified by **title text** only — category numbers are unreliable (same number reused for different types across APIs). Titles are normalized with `.replace(/\s+/g, ' ')` before matching (API sometimes uses double spaces).
