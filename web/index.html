@@ -2045,6 +2045,10 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     location.reload();
   });
 
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    document.title = '';
+  }
+
   init();
 })();
 </script>
