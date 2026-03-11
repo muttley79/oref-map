@@ -1,0 +1,11 @@
+name: "פנייה כללית"
+description: "שאלה, הצעה, או כל דבר אחר"
+labels: ["question"]
+body:
+  - type: textarea
+    id: details
+    attributes:
+      label: "ספרו לנו"
+      placeholder: "שאלה, הצעה, או כל דבר אחר"
+    validations:
+      required: true
