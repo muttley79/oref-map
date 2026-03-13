@@ -81,8 +81,8 @@ Alerts are classified by **title text** only — category numbers are unreliable
 |-------|-------|-------------|
 | Danger | Red | `ירי רקטות וטילים`, `נשק לא קונבנציונלי`, `חדירת מחבלים` |
 | Danger | Purple | `חדירת כלי טיס עוין` |
-| Caution | Yellow | `בדקות הקרובות צפויות להתקבל התרעות באזורך` |
-| All-clear | Green | Substring: `האירוע הסתיים`, `ניתן לצאת`, `החשש הוסר` |
+| Caution | Yellow | `בדקות הקרובות צפויות להתקבל התרעות באזורך`; substring: `לשפר את המיקום למיגון המיטבי`, `להישאר בקרבתו` |
+| All-clear | Green | Substring: `האירוע הסתיים`, `ניתן לצאת` (excluding `להישאר בקרבתו`), `החשש הוסר` |
 | Normal | — | No alert |
 
 Unknown titles default to red and log a console warning.

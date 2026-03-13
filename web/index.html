@@ -927,7 +927,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
 
     // Green — all-clear / event over (fades out)
     if (title.includes('האירוע הסתיים') ||
-        title.includes('ניתן לצאת') ||
+        (title.includes('ניתן לצאת') && !title.includes('להישאר בקרבתו')) ||
         title.includes('החשש הוסר') ||
         title.includes('יכולים לצאת') ||
         title.includes('אינם צריכים לשהות') ||
@@ -936,10 +936,11 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
       return 'green';
     }
 
-    // Yellow — early warning / preparedness notices
+    // Yellow — early warning / preparedness / stay near shelter
     if (title === 'בדקות הקרובות צפויות להתקבל התרעות באזורך' ||
         title.includes('לשפר את המיקום למיגון המיטבי') ||
-        title === 'יש לשהות בסמיכות למרחב המוגן') {
+        title === 'יש לשהות בסמיכות למרחב המוגן' ||
+        title.includes('להישאר בקרבתו')) {
       return 'yellow';
     }
 

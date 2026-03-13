@@ -23,7 +23,7 @@ Live map of Israel showing [Pikud HaOref](https://www.oref.org.il) (Home Front C
 |-------|---------|
 | 🔴 Red | Rocket/missile fire |
 | 🟣 Purple | Drone/aircraft infiltration |
-| 🟡 Yellow | Preparedness / early warning (stay near shelter, sirens expected) |
+| 🟡 Yellow | Early warning / preparedness — go near your shelter, sirens may follow |
 | 🟢 Green | Event ended (fades out after 1 minute) |
 
 ## Development

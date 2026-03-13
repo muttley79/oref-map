@@ -61,14 +61,14 @@ Do **not** use `cat`/`category` for classification — the same number is reused
 | `ירי רקטות וטילים - האירוע הסתיים` | Rocket event over | 🟢 Green (fades) |
 | `חדירת כלי טיס עוין - האירוע הסתיים` | Aircraft event over | 🟢 Green (fades) |
 | `ניתן לצאת מהמרחב המוגן` | Can leave shelter | 🟢 Green (fades) |
-| `ניתן לצאת מהמרחב המוגן אך יש להישאר בקרבתו` | Can leave but stay close (wartime baseline) | 🟢 Green (fades) |
+| `ניתן לצאת מהמרחב המוגן אך יש להישאר בקרבתו` | Can leave shelter but stay near it | 🟡 Yellow |
 | `חדירת מחבלים - החשש הוסר` | Terrorist threat removed | 🟢 Green (fades) |
 | `השוהים במרחב המוגן יכולים לצאת...` | Shelter occupants can exit | 🟢 Green (fades) |
 | `תושבי האזורים הבאים אינם צריכים לשהות יותר בסמיכות למרחב המוגן.` | No longer need to stay near shelter | 🟢 Green (fades) |
 | `סיום שהייה בסמיכות למרחב המוגן` | End of stay near shelter | 🟢 Green (fades) |
 
-- Green titles are matched by substring (`האירוע הסתיים`, `ניתן לצאת`, `החשש הוסר`, `יכולים לצאת`, `אינם צריכים לשהות`, `סיום שהייה בסמיכות`) to catch variants.
-- Yellow preparedness notice is matched by substring `לשפר את המיקום למיגון המיטבי`.
+- Green titles are matched by substring (`האירוע הסתיים`, `ניתן לצאת` (excluding titles that also contain `להישאר בקרבתו`), `החשש הוסר`, `יכולים לצאת`, `אינם צריכים לשהות`, `סיום שהייה בסמיכות`) to catch variants.
+- Yellow titles are matched by exact string or substring: `לשפר את המיקום למיגון המיטבי`, `להישאר בקרבתו`.
 - API sometimes uses double spaces in titles — normalize with `.replace(/\s+/g, ' ')` before matching.
 - Unknown titles default to Red and log a console warning.
 
