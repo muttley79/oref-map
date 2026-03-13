@@ -13,7 +13,7 @@ export async function onRequestGet(context) {
   let response = await cache.match(cacheKey);
   if (response) return response;
 
-  response = await fetch(upstream);
+  response = await fetch(upstream, { cf: { cacheEverything: false } });
   if (!response.ok) {
     return new Response('Failed to load polygons', { status: 502 });
   }
