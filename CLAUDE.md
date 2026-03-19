@@ -85,7 +85,9 @@ Do **not** use `cat`/`category` for classification — the same number is reused
 The live API is polled every 1s for immediate danger display. The history API is polled every 10s because all-clear events are short-lived in the live API and would be missed — the history API is the reliable source for state transitions to green.
 
 ### Geo-blocking
-The Oref APIs geo-block non-Israeli IPs. Pages Functions at `/api/*` check the colo — TLV users are proxied directly, non-TLV users get a 303 redirect to `/api2/*` which is handled by the placement-pinned Worker. See `docs/architecture.md` for details.
+The Oref APIs geo-block non-Israeli IPs with **HTTP 403**. Pages Functions at `/api/*` check the colo — TLV users are proxied directly, non-TLV users get a 303 redirect to `/api2/*` which is handled by the placement-pinned Worker. See `docs/architecture.md` for details.
+
+**Cloudflare Worker cron triggers do not obey placement** — a cron worker always runs from a non-Israeli colo. Only fetch-triggered workers (including the placement-pinned Worker at `/api2/*`) reliably run from TLV.
 
 # currentDate
 Today's date is 2026-03-04.

@@ -1,0 +1,27 @@
+export async function onRequestGet(context) {
+  const url = new URL(context.request.url);
+  const date = url.searchParams.get('date');
+
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return new Response('Bad Request: ?date=YYYY-MM-DD required', { status: 400 });
+  }
+
+  const complete = await context.env.HISTORY_BUCKET.head(`${date}.complete`);
+  const obj = await context.env.HISTORY_BUCKET.get(`${date}.jsonl`);
+  if (!obj) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const text = await obj.text();
+  const json = '[' + text.trimEnd().slice(0, -1) + ']';
+
+  // Completed days are immutable — cache for 1 hour. Ongoing days change every 15 min.
+  const cacheControl = complete ? 'public, max-age=3600' : 'public, max-age=60';
+
+  return new Response(json, {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': cacheControl,
+    },
+  });
+}

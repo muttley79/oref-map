@@ -51,3 +51,22 @@ jobs:
           wranglerVersion: "4"
           command: deploy --name ${{ matrix.name }}
           workingDirectory: worker
+
+  deploy-ingestion:
+    concurrency:
+      group: ingestion-prod-main
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy ingestion Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_PAGES }}
+          wranglerVersion: "4"
+          command: deploy
+          workingDirectory: ingestion
