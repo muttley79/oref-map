@@ -9,4 +9,4 @@ if [ ! -f "$POLYGONS" ]; then
     || echo "WARNING: Download failed. The map will not display polygons."
 fi
 
-npx wrangler pages dev web/ --ip 0.0.0.0 "$@"
+npx --yes wrangler pages dev web/ --ip 0.0.0.0 "$@"

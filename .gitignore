@@ -5,6 +5,7 @@ node_modules/
 /package-lock.json
 .dev.vars
 .wrangler/
+/tmp/
 
 
 # Python-generated files
@@ -31,3 +32,4 @@ wheels/
 
 # Generated locally from oref-polygons; served via Pages Function in production
 /web/locations_polygons.json
+/history_full.json

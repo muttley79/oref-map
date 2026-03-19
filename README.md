@@ -77,6 +77,10 @@ Ways to help:
 
 To run locally, see the [Development](#development) section above.
 
+## Contributors
+
+Thanks to [@uripeer3](https://github.com/uripeer3), [@tomerkon](https://github.com/tomerkon), [@michalrymland](https://github.com/michalrymland), and [@ravitzm21](https://github.com/ravitzm21) for contributing to this project.
+
 ## Data
 
 Polls the Oref APIs:
