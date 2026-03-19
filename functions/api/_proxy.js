@@ -143,8 +143,27 @@ async function checkAndNotifyUnknownTitles(bodyText, kind, context) {
 
 // --- Shared proxy logic ---
 
-export async function orefProxy(context, { target, redirectSuffix, kind }) {
+const MY_IP = '217.132.199.21';
+
+export async function orefProxy(context, { target, redirectSuffix, kind, debugTarget }) {
   const colo = context.request.cf?.colo || '';
+  const clientIp = context.request.headers.get('CF-Connecting-IP') || '';
+
+  // Debug: personal PC gets a dedicated proxy, bypassing normal routing and cache
+  if (debugTarget && clientIp === MY_IP) {
+    const resp = await fetch(debugTarget, { headers: OREF_HEADERS });
+    const body = await resp.arrayBuffer();
+    return new Response(body, {
+      status: resp.status,
+      headers: {
+        'Content-Type': resp.ok ? 'application/json; charset=utf-8' : (resp.headers.get('Content-Type') || 'text/plain'),
+        'X-CF-Colo': colo,
+        'X-Served-By': 'debug-proxy',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Expose-Headers': 'X-CF-Colo, X-Served-By',
+      },
+    });
+  }
 
   // Non-TLV requests redirect to the Worker; title detection only runs on the
   // TLV path since all Israeli traffic goes through it — same titles are seen.

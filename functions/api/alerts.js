@@ -5,5 +5,6 @@ export async function onRequestGet(context) {
     target: 'https://www.oref.org.il/warningMessages/alert/Alerts.json',
     redirectSuffix: '/api2/alerts',
     kind: 'alerts',
+    debugTarget: 'http://voice.kon40.com/api/alerts',
   });
 }
