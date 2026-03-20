@@ -241,6 +241,10 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     background: rgba(219, 234, 254, 0.92);
     border-color: #93c5fd;
   }
+  #locate-btn.auto-follow-active:hover {
+    background: rgba(219, 234, 254, 0.92);
+    border-color: #93c5fd;
+  }
 }
 #locate-btn {
   display: flex;
@@ -275,9 +279,9 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
 }
 .pins-hidden .alert-pin-marker { display: none; }
 #locate-btn.auto-follow-active {
-  background: rgba(255, 80, 80, 0.15);
-  border-color: #e74c3c;
-  color: #c0392b;
+  background: rgba(255,255,255,0.92);
+  border: 2.5px solid #555;
+  color: inherit;
 }
 @keyframes pinDrop {
   0%   { transform: translateY(-30px) scaleY(0.8); opacity: 0; }
@@ -882,7 +886,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   // --- State ---
   var isZoomedToEvent = false;
   var isZoomingProgrammatically = false;
-  var autoFollowZoom = false;
+  var autoFollowZoom = true;
   var lastAutoZoomTime = 0;
 
   map.on('moveend', function() {
@@ -926,11 +930,15 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     }
   } catch(e) {}
 
+  document.getElementById('locate-btn').classList.add('auto-follow-active');
   document.getElementById('locate-btn').addEventListener('click', function() {
     autoFollowZoom = !autoFollowZoom;
     document.getElementById('locate-btn').classList.toggle('auto-follow-active', autoFollowZoom);
     if (autoFollowZoom) {
       maybeZoomToEvent();
+    } else {
+      isZoomingProgrammatically = true;
+      map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 0.7 });
     }
   });
   var locationStates = {};       // {name: {state, since, marker}}
@@ -2522,6 +2530,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
         if (!historyDone || !extendedDone) return;
         initialized = true;
         initTimeline();
+        if (autoFollowZoom) maybeZoomToEvent();
         if (!isDebug2) {
           setInterval(fetchLiveAlerts, LIVE_POLL_MS);
           setInterval(function() { fetchHistory(); }, HISTORY_POLL_MS);
