@@ -1975,7 +1975,11 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     function rebuildTimeline(seekMode) {
       // seekMode: 'last' (default) = last event, 'first' = first event
       if (extendedHistory.length > 0) {
-        if (isViewingToday()) timelineMax = Math.max(timelineMax, Date.now());
+        extendedHistory.sort(function(a, b) { return a.alertDate - b.alertDate; });
+        timelineMin = extendedHistory[0].alertDate;
+        timelineMax = isViewingToday()
+          ? Math.max(extendedHistory[extendedHistory.length - 1].alertDate, Date.now())
+          : extendedHistory[extendedHistory.length - 1].alertDate;
         renderTicks();
         if (eventPeaks.length > 0) {
           if (seekMode === 'first') {
@@ -2053,6 +2057,12 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
         };
       } else {
         rebuildTimeline();
+        // Refresh day-history for today in background
+        if (isViewingToday()) {
+          fetchExtendedHistory(function() {
+            if (isOpen()) rebuildTimeline();
+          });
+        }
       }
       updateOverlay();
     }
