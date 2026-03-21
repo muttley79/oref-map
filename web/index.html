@@ -2816,6 +2816,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
         // Fetch live history first, then day-history in background
         fetchHistory(function() {
           initialized = true;
+          if (autoFollowZoom) maybeZoomToEvent();
           fetchExtendedHistory(function() {
             rebuildTimelineFn();
           });
