@@ -6,9 +6,20 @@ export async function onRequestGet(context) {
     return new Response('Bad Request: ?date=YYYY-MM-DD required', { status: 400 });
   }
 
+  // Local dev: proxy to production
+  if (!context.env.HISTORY_BUCKET) {
+    return fetch(`https://oref-map.org/api/day-history?date=${date}`);
+  }
+
   const complete = await context.env.HISTORY_BUCKET.head(`${date}.complete`);
   const obj = await context.env.HISTORY_BUCKET.get(`${date}.jsonl`);
   if (!obj) {
+    const todayIsrael = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jerusalem' }).format(new Date());
+    if (date === todayIsrael) {
+      return new Response('[]', {
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
+      });
+    }
     return new Response('Not Found', { status: 404 });
   }
 
