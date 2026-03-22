@@ -946,7 +946,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   // --- State ---
   var autoZoomActive = localStorage.getItem('oref-auto-zoom') === 'true';
   var isZoomingProgrammatically = false;
-  var autoFollowZoom = true;
+  var autoFollowZoom = autoZoomActive;
 
   if (autoZoomActive) {
     document.getElementById('locate-btn').classList.add('active');
@@ -992,7 +992,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     }
   } catch(e) {}
 
-  document.getElementById('locate-btn').classList.add('auto-follow-active');
+  document.getElementById('locate-btn').classList.toggle('auto-follow-active', autoFollowZoom);
   document.getElementById('locate-btn').addEventListener('click', function() {
     autoFollowZoom = !autoFollowZoom;
     autoZoomActive = autoFollowZoom;
@@ -2790,7 +2790,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     });
 
     // --- Speed control ---
-    var SPEED_STEPS = [1, 0.5, 3, 2, 1.5];
+    var SPEED_STEPS = [1, 1.5, 2, 3, 0.5];
     var speedIdx = 0;
     var BASE_PLAY_SPEED = PLAY_SPEED;
     var speedBtn = document.getElementById('tl-speed');
