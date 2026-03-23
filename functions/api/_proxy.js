@@ -5,8 +5,13 @@ const OREF_HEADERS = {
 
 const PROXY_HOSTS = [
   'https://orefproxy5.oref-map.org',
-  'https://orefproxy6.oref-map.org',
+  'https://orefproxy7.oref-map.org',
   'https://proxy1.oref-proxy1.workers.dev',
+];
+
+const PROXY_HOST_PATTERNS = [
+  /^orefproxy\d+\.oref-map\.org$/,
+  /^proxy\d+\.oref-proxy\d+\.workers\.dev$/,
 ];
 
 function randomProxy() {
@@ -145,6 +150,19 @@ async function checkAndNotifyUnknownTitles(bodyText, kind, context) {
 
 export async function orefProxy(context, { target, redirectSuffix, kind }) {
   const colo = context.request.cf?.colo || '';
+  const url = new URL(context.request.url);
+  const debugApi = url.searchParams.get('debugapi');
+
+  // ?debugapi=<hostname> forces redirect to that proxy (if whitelisted), even from TLV
+  if (debugApi) {
+    const proxyHost = PROXY_HOST_PATTERNS.some(p => p.test(debugApi)) ? 'https://' + debugApi : null;
+    if (proxyHost) {
+      return new Response(null, {
+        status: 303,
+        headers: { 'Location': proxyHost + redirectSuffix, 'X-CF-Colo': colo },
+      });
+    }
+  }
 
   // Non-TLV requests redirect to the Worker; title detection only runs on the
   // TLV path since all Israeli traffic goes through it — same titles are seen.
