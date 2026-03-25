@@ -889,6 +889,13 @@ body.idle #right-panel {
     d.setDate(d.getDate() + n);
     return d.toISOString().slice(0, 10);
   }
+  function viewingDayBounds() {
+    var d = timelineDate || todayDateStr();
+    return {
+      start: new Date(d + 'T00:00:00').getTime(),
+      end: new Date(d + 'T23:59:59').getTime()
+    };
+  }
 
   // --- Panel history (mobile back button closes panels) ---
   var panelHistoryPushed = false;
@@ -1533,8 +1540,6 @@ body.idle #right-panel {
     if (dateMatch && !extendedRids.has(key) && since) {
       extendedRids.add(key);
       extendedHistory.push({ location: location, title: title, alertDate: since, state: state });
-      if (!timelineMin || since < timelineMin) timelineMin = since;
-      timelineMax = Math.max(timelineMax, since, Date.now());
     }
 
     // Skip expired green markers — don't briefly flash old all-clears on page load
@@ -1839,12 +1844,9 @@ body.idle #right-panel {
       if (finalized) return; // already handled (404 or non-array)
       finalized = true;
       extendedHistory.sort(function(a, b) { return a.alertDate - b.alertDate; });
-      if (extendedHistory.length > 0) {
-        timelineMin = extendedHistory[0].alertDate;
-        timelineMax = isViewingToday()
-          ? Math.max(extendedHistory[extendedHistory.length - 1].alertDate, Date.now())
-          : extendedHistory[extendedHistory.length - 1].alertDate;
-      }
+      var bounds = viewingDayBounds();
+      timelineMin = bounds.start;
+      timelineMax = bounds.end;
       console.log('Day history (' + dateParam + '):', extendedHistory.length, 'entries');
       dayHistoryReady = true;
       if (onDone) onDone();
@@ -2023,12 +2025,11 @@ body.idle #right-panel {
 
     function rebuildTimeline(seekMode) {
       // seekMode: 'last' (default) = last event, 'first' = first event
+      var bounds = viewingDayBounds();
+      timelineMin = bounds.start;
+      timelineMax = bounds.end;
       if (extendedHistory.length > 0) {
         extendedHistory.sort(function(a, b) { return a.alertDate - b.alertDate; });
-        timelineMin = extendedHistory[0].alertDate;
-        timelineMax = isViewingToday()
-          ? Math.max(extendedHistory[extendedHistory.length - 1].alertDate, Date.now())
-          : extendedHistory[extendedHistory.length - 1].alertDate;
         renderTicks();
         if (eventPeaks.length > 0) {
           if (seekMode === 'first') {
@@ -2075,11 +2076,12 @@ body.idle #right-panel {
       extendedHistory = [];
       extendedRids = new Set();
       locationHistory = {};
-      timelineMin = 0;
-      timelineMax = 0;
       lastHistoryDate = null;
       stopPlay();
       timelineDate = (newDate === todayDateStr()) ? null : newDate;
+      var bounds = viewingDayBounds();
+      timelineMin = bounds.start;
+      timelineMax = bounds.end;
       updateDateNav();
       label.textContent = '\u05D8\u05D5\u05E2\u05DF...';
       label.style.opacity = '0.5';
@@ -2093,10 +2095,6 @@ body.idle #right-panel {
         }
         if (carryover.length > 0) {
           extendedHistory.sort(function(a, b) { return a.alertDate - b.alertDate; });
-          if (extendedHistory.length > 0) {
-            timelineMin = extendedHistory[0].alertDate;
-            timelineMax = extendedHistory[extendedHistory.length - 1].alertDate;
-          }
         }
       }
 
@@ -2171,8 +2169,9 @@ body.idle #right-panel {
         extendedHistory = [];
         extendedRids = new Set();
         locationHistory = {};
-        timelineMin = 0;
-        timelineMax = 0;
+        var bounds = viewingDayBounds();
+        timelineMin = bounds.start;
+        timelineMax = bounds.end;
         lastHistoryDate = null;
         dayHistoryReady = false;
         updateDateNav();
@@ -2263,7 +2262,8 @@ body.idle #right-panel {
     }
 
     function clampTime(t) {
-      return Math.max(timelineMin, Math.min(timelineMax, t));
+      var max = isViewingToday() ? Math.min(timelineMax, Date.now()) : timelineMax;
+      return Math.max(timelineMin, Math.min(max, t));
     }
 
     // --- Mode switching ---
@@ -2301,7 +2301,9 @@ body.idle #right-panel {
     // --- Slider input ---
     slider.addEventListener('input', function() {
       stopPlay();
-      enterHistoryMode(timeFromSlider(parseInt(slider.value)));
+      var time = clampTime(timeFromSlider(parseInt(slider.value)));
+      slider.value = sliderFromTime(time);
+      enterHistoryMode(time);
       maybeZoomToEvent();
     });
 
@@ -2417,7 +2419,8 @@ body.idle #right-panel {
           var exp = locStates[loc].since + ALERT_MAX_AGE_MS;
           if (exp > latestExpiry) latestExpiry = exp;
         }
-        bands.push({ start: curStart, end: Math.min(latestExpiry, timelineMax), state: curState });
+        var bandCap = isViewingToday() ? Math.min(timelineMax, Date.now()) : timelineMax;
+        bands.push({ start: curStart, end: Math.min(latestExpiry, bandCap), state: curState });
       }
 
       computedBands = bands;
@@ -2433,6 +2436,20 @@ body.idle #right-panel {
         span.style.width = widthPct + '%';
         span.style.background = TICK_COLORS[b.state] || TICK_COLORS.red;
         ticksEl.appendChild(span);
+      }
+
+      // Gray out future portion when viewing today
+      if (isViewingToday()) {
+        var now = Date.now();
+        if (now < timelineMax) {
+          var futureLeft = ((now - timelineMin) / range) * 100;
+          var futureSpan = document.createElement('span');
+          futureSpan.style.left = futureLeft + '%';
+          futureSpan.style.width = (100 - futureLeft) + '%';
+          futureSpan.style.background = 'repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)';
+          futureSpan.style.opacity = '1';
+          ticksEl.appendChild(futureSpan);
+        }
       }
     }
 
@@ -2467,9 +2484,10 @@ body.idle #right-panel {
       var lastFrame = performance.now();
       var gapEnterFrame = null;
       var playEventIdx = -1;
-      if (parseInt(slider.value) >= 999) {
-        slider.value = 0;
-        enterHistoryMode(timelineMin);
+      if (parseInt(slider.value) >= sliderFromTime(isViewingToday() ? Math.min(timelineMax, Date.now()) : timelineMax)) {
+        var startTime = eventPeaks.length > 0 ? eventStarts[0] : timelineMin;
+        slider.value = sliderFromTime(startTime);
+        enterHistoryMode(startTime);
       }
 
       function findEventIdx(time) {
@@ -2485,13 +2503,12 @@ body.idle #right-panel {
         var dt = now - lastFrame;
         lastFrame = now;
         var newTime = currentViewTime + dt * PLAY_SPEED;
-        if (newTime >= timelineMax) {
-          slider.value = 0;
-          enterHistoryMode(timelineMin);
-          lastFrame = now;
-          gapEnterFrame = null;
-          playEventIdx = -1;
-          playRAF = requestAnimationFrame(tick);
+        var playEnd = isViewingToday() ? Math.min(timelineMax, Date.now()) : timelineMax;
+        if (newTime >= playEnd) {
+          if (eventPeaks.length > 0) {
+            seekTo(eventPeaks[0]);
+          }
+          stopPlay();
           return;
         }
         if (!isInBand(newTime)) {
