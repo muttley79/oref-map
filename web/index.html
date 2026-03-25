@@ -578,10 +578,11 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   padding: 0 2px;
 }
 
+#mobile-bar { display: none; }
 @media (max-width: 480px) {
   #right-panel {
     right: 12px;
-    bottom: 28px;
+    bottom: 68px;
     gap: 6px;
     max-height: calc(100dvh - 100px);
     overflow-y: auto;
@@ -648,12 +649,50 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   .btn-icon { font-size: 16px; }
   .btn-text { font-size: 12px; }
   body.idle #right-panel { bottom: 8px; }
+  #gps-row,
+  #sound-btn:not(.open),
+  #timeline-btn:not(.open) {
+    position: absolute;
+    left: -9999px;
+    pointer-events: none;
+  }
+  #mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(255,255,255,0.97);
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    z-index: 1001;
+    align-items: stretch;
+  }
+  .mb-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-right: 1px solid #eee;
+    cursor: pointer;
+    color: #555;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mb-btn:last-child { border-right: none; }
+  .mb-btn:active { background: #f0f0f0; }
+  .mb-btn.active { background: rgba(219,234,254,0.7); color: #1d4ed8; }
 }
 /* Idle mode: hide buttons after inactivity */
 body.idle #gps-row,
 body.idle #sound-btn,
 body.idle #timeline-btn,
-body.idle #predict-btn {
+body.idle #predict-btn,
+body.idle #mobile-bar {
   opacity: 0;
   max-height: 0 !important;
   overflow: hidden;
@@ -776,6 +815,23 @@ body.idle #right-panel {
       </div>
     </div>
   </div>
+</div>
+<div id="mobile-bar">
+  <button class="mb-btn" id="mb-zoom" title="זום">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path class="pan-arrows" d="M12 2L14.5 4.5M12 2L9.5 4.5M12 22L9.5 19.5M12 22L14.5 19.5M2 12L4.5 9.5M2 12L4.5 14.5M22 12L19.5 14.5M22 12L19.5 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle class="zoom-lens" cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" fill="transparent"/><path d="M14.5 14.5L17.5 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <button class="mb-btn" id="mb-gps" title="הראה אותי">
+    <span class="blue-dot"></span>
+  </button>
+  <button class="mb-btn" id="mb-predict" title="כיוון שיגור">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L12 22M12 2L8 6M12 2L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="currentColor" opacity="0.5"/><circle cx="16" cy="14" r="1.5" fill="currentColor" opacity="0.5"/></svg>
+  </button>
+  <button class="mb-btn" id="mb-sound" title="קול">
+    🔇
+  </button>
+  <button class="mb-btn" id="mb-timeline" title="ציר זמן">
+    <svg width="22" height="22" viewBox="0 0 100 100"><path d="M48,8 L26,26 L48,44 L48,34 C62,34 74,46 74,60 C74,74 62,86 48,86 C38,86 30,80 26,72 L18,76 C24,88 35,96 48,96 C68,96 84,80 84,60 C84,40 68,24 48,24 L48,8Z" fill="#A1C2FA" stroke="#333" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="60" r="26" fill="white" stroke="#333" stroke-width="3"/><g stroke="#333" stroke-width="4" stroke-linecap="round"><line x1="48" y1="60" x2="38" y2="52"/><line x1="48" y1="60" x2="32" y2="68"/></g><circle cx="48" cy="60" r="3.5" fill="#A1C2FA" stroke="#333" stroke-width="2"/><g stroke="#333" stroke-width="2.5" stroke-linecap="round"><line x1="48" y1="39" x2="48" y2="43"/><line x1="69" y1="60" x2="65" y2="60"/><line x1="48" y1="81" x2="48" y2="77"/><line x1="27" y1="60" x2="31" y2="60"/></g></svg>
+  </button>
 </div>
 <script>
 (function() {
@@ -954,6 +1010,7 @@ body.idle #right-panel {
         localStorage.removeItem('oref-location-hidden');
       }
     });
+
   }
 
   initUserLocation();
@@ -3349,6 +3406,42 @@ body.idle #right-panel {
   ['mousemove','mousedown','keydown','wheel','scroll','touchstart','touchmove']
     .forEach(function(e) { document.addEventListener(e, _resetIdle, {passive:true}); });
   _resetIdle();
+
+  // --- Mobile bottom bar ---
+  (function() {
+    var watches = [
+      { mb: 'mb-zoom',     src: 'locate-btn',   watch: ['auto-follow-active'] },
+      { mb: 'mb-gps',      src: 'location-btn', watch: ['active'] },
+      { mb: 'mb-predict',  src: 'predict-btn',  watch: ['active'] },
+      { mb: 'mb-sound',    src: 'sound-btn',    watch: ['active'] },
+      { mb: 'mb-timeline', src: 'timeline-btn', watch: ['open'] },
+    ];
+    watches.forEach(function(pair) {
+      var mbBtn = document.getElementById(pair.mb);
+      var srcEl = document.getElementById(pair.src);
+      if (!mbBtn || !srcEl) return;
+      new MutationObserver(function() {
+        mbBtn.classList.toggle('active', pair.watch.some(function(c) { return srcEl.classList.contains(c); }));
+      }).observe(srcEl, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    document.getElementById('mb-zoom').addEventListener('click', function() {
+      document.getElementById('locate-btn').click();
+    });
+    document.getElementById('mb-gps').addEventListener('click', function() {
+      document.getElementById('location-btn-row').click();
+    });
+    document.getElementById('mb-predict').addEventListener('click', function() {
+      document.getElementById('predict-btn').click();
+    });
+    document.getElementById('mb-sound').addEventListener('click', function(e) {
+      e.stopPropagation();
+      document.getElementById('sound-btn-row').click();
+    });
+    document.getElementById('mb-timeline').addEventListener('click', function() {
+      document.getElementById('timeline-btn-row').click();
+    });
+  })();
 
   init();
 })();
