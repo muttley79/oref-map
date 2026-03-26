@@ -255,6 +255,27 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     border-color: #f59e0b;
   }
 }
+#share-btn {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.55);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+  color: #444;
+  padding: 0;
+}
+@media (pointer: coarse) {
+  #share-btn { display: flex; }
+}
 #locate-btn {
   display: flex;
   align-items: center;
@@ -710,6 +731,12 @@ body.idle #right-panel {
 <div id="map"></div>
 
 <h1 id="page-title">מפת העורף</h1>
+<button id="share-btn" type="button" title="שתף" aria-label="שתף">
+  <!-- iOS share icon: tray with upward arrow -->
+  <svg id="share-icon-ios" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="8 6 12 2 16 6"/><line x1="12" y1="2" x2="12" y2="15"/><path d="M20 14v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5"/></svg>
+  <!-- Android share icon: connected nodes -->
+  <svg id="share-icon-android" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+</button>
 
 
 <div id="status">
@@ -1940,7 +1967,8 @@ body.idle #right-panel {
       var color = COLORS[e.state] || '#888';
       var label = displayLabel(e.title);
       var time = e.alertDate ? e.alertDate.slice(11, 16) : '';
-      var border = i < entries.length - 1 ? 'border-bottom:1px solid #eee;' : '';
+      var nextEntry = entries[i + 1];
+      var border = (nextEntry && nextEntry.state === 'green') ? 'border-bottom:1px solid #ccc;' : '';
       return '<div style="padding:4px 0;' + border + 'display:flex;align-items:baseline;gap:8px;direction:rtl">' +
         (time ? '<span style="color:' + color + ';font-size:12px;white-space:nowrap;font-weight:bold">' + time + '</span>' : '') +
         '<span style="color:#444;font-size:13px;flex:1;text-align:right">' + label + '</span>' +
@@ -2303,7 +2331,7 @@ body.idle #right-panel {
     for (var i = 0; i < entries.length; i++) {
       var entry = entries[i];
       var alertDate = entry.alertDate || '';
-      if (lastHistoryDate && alertDate <= lastHistoryDate) continue;
+      if (lastHistoryDate && alertDate < lastHistoryDate) continue;
       processHistoryEntry(entry);
       newEntries++;
     }
@@ -3443,6 +3471,22 @@ body.idle #right-panel {
     });
   })();
 
+  // --- Share button ---
+  var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  document.getElementById(isIos ? 'share-icon-ios' : 'share-icon-android').style.display = 'block';
+
+  document.getElementById('share-btn').addEventListener('click', async function() {
+    try { await navigator.share({
+        title: 'מפת העורף',
+        text: 'מפת העורף - מפת התרעות פיקוד העורף בזמן אמת',
+        url: 'https://oref-map.org'
+      });
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('Share failed:', e);
+    }
+  });
+
   init();
 })();
 </script>
@@ -3450,6 +3494,51 @@ body.idle #right-panel {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
+</script>
+<script>
+(function() {
+  var STORAGE_KEY = 'pwa_install';
+  var stored;
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { stored = {}; }
+  // Don't prompt if already installed or permanently dismissed
+  if (stored.installed || stored.dismissed) return;
+
+  function saveStored() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch (e) {}
+  }
+
+  var deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    var today = new Date().toISOString().slice(0, 10);
+    if (stored.lastDay !== today) {
+      stored.lastDay = today;
+      stored.todayCount = 0;
+    }
+    stored.todayCount = (stored.todayCount || 0) + 1;
+    saveStored();
+
+    if (stored.todayCount >= 3) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') {
+          stored.installed = true;
+        } else {
+          stored.dismissed = true;
+        }
+        saveStored();
+        deferredPrompt = null;
+      });
+    }
+  });
+
+  window.addEventListener('appinstalled', function() {
+    stored.installed = true;
+    saveStored();
+  });
+})();
 </script>
 </body>
 </html>
