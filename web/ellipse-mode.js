@@ -512,13 +512,15 @@
             continue;
           }
 
-          var marker = L.marker([point[0], point[1]], {
-            icon: icon,
-            keyboard: false
-          });
-          marker.bindPopup(alert.location + (alert.alertDate ? '<br>' + alert.alertDate : ''));
-          marker.addTo(map);
-          ellipseMarkers.push(marker);
+          if (displayMode >= 1) {
+            var marker = L.marker([point[0], point[1]], {
+              icon: icon,
+              keyboard: false
+            });
+            marker.bindPopup(alert.location + (alert.alertDate ? '<br>' + alert.alertDate : ''));
+            marker.addTo(map);
+            ellipseMarkers.push(marker);
+          }
           placedPoints.push({ lat: point[0], lng: point[1] });
         }
         addEllipseOverlay(placedPoints, clusters[c]);
@@ -622,7 +624,7 @@
     function refreshExtendedVisual() {
       var getCurrentUserPosition = options.getCurrentUserPosition;
       var userPos = getCurrentUserPosition ? getCurrentUserPosition() : null;
-      var shouldDraw = !!(enabled && displayMode === 2 && userPos);
+      var shouldDraw = !!(enabled && displayMode >= 2 && userPos);
       if (!shouldDraw) {
         clearExtendedVisual();
         return Promise.resolve();
@@ -691,7 +693,8 @@
 
     function setDisplayMode(nextMode) {
       displayMode = nextMode;
-      return refreshExtendedVisual();
+      if (!enabled) return refreshExtendedVisual();
+      return sync(true);
     }
 
     return {
