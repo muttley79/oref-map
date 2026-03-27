@@ -249,7 +249,7 @@
       return erf(x / (sigma * Math.SQRT2));
     }
 
-    function getPlusMinusWindowProbability(geometry, latlng, windowHalfWidthMeters, positionMetrics) {
+    function getHomeAreaProbability(geometry, latlng, windowHalfWidthMeters, positionMetrics) {
       if (!geometry || !latlng || !Number.isFinite(windowHalfWidthMeters) || windowHalfWidthMeters < 0) return null;
 
       positionMetrics = positionMetrics || getGeometryPositionMetrics(geometry, latlng);
@@ -271,7 +271,7 @@
       return {
         centerDistanceMeters: positionMetrics.centerDistanceMeters,
         directionalRadiusMeters: directionalRadiusMeters,
-        plusMinus100mProbability: upperCdf - lowerCdf
+        homeStripeProbability: upperCdf - lowerCdf
       };
     }
 
@@ -736,9 +736,9 @@
             centerDistanceMeters: positionMetrics ? positionMetrics.centerDistanceMeters : null,
             normalizedDistanceRatio: positionMetrics ? positionMetrics.normalizedDistanceRatio : null,
             directionalRadiusMeters: null,
-            plusMinus100mProbability: null,
-            dashedEllipseCircumferenceMeters: null,
-            plusMinus100mProbabilityPerCircumferenceMeter: null
+            homeStripeProbability: null,
+            homeEllipseCircumferenceMeters: null,
+            homeStripePerCircumferenceProbability: null
           });
         }
 
@@ -784,7 +784,7 @@
           clearExtendedVisual();
           return;
         }
-        var probabilityMetrics = getPlusMinusWindowProbability(
+        var probabilityMetrics = getHomeAreaProbability(
           nearestCluster.sourceGeometry,
           userPos,
           100,
@@ -794,26 +794,26 @@
           }
         );
         nearestCluster.directionalRadiusMeters = probabilityMetrics ? probabilityMetrics.directionalRadiusMeters : null;
-        nearestCluster.plusMinus100mProbability = probabilityMetrics ? probabilityMetrics.plusMinus100mProbability : null;
+        nearestCluster.homeStripeProbability = probabilityMetrics ? probabilityMetrics.homeStripeProbability : null;
         var detailedGeometry = buildScaledGeometry(
           nearestCluster.sourceGeometry,
           nearestCluster.normalizedDistanceRatio
         );
-        nearestCluster.dashedEllipseCircumferenceMeters = getGeometryCircumferenceMeters(detailedGeometry);
-        nearestCluster.plusMinus100mProbabilityPerCircumferenceMeter =
-          Number.isFinite(nearestCluster.plusMinus100mProbability) &&
-          Number.isFinite(nearestCluster.dashedEllipseCircumferenceMeters) &&
-          nearestCluster.dashedEllipseCircumferenceMeters > 0
-            ? (nearestCluster.plusMinus100mProbability / nearestCluster.dashedEllipseCircumferenceMeters) * 100
+        nearestCluster.homeEllipseCircumferenceMeters = getGeometryCircumferenceMeters(detailedGeometry);
+        nearestCluster.homeStripePerCircumferenceProbability =
+          Number.isFinite(nearestCluster.homeStripeProbability) &&
+          Number.isFinite(nearestCluster.homeEllipseCircumferenceMeters) &&
+          nearestCluster.homeEllipseCircumferenceMeters > 0
+            ? (nearestCluster.homeStripeProbability / nearestCluster.homeEllipseCircumferenceMeters) * 100
             : null;
         console.log({
           cluster: nearestCluster.label,
           normalizedDistanceRatio: nearestCluster.normalizedDistanceRatio,
           centerDistanceMeters: nearestCluster.centerDistanceMeters,
           directionalRadiusMeters: nearestCluster.directionalRadiusMeters,
-          plusMinus100mProbability: nearestCluster.plusMinus100mProbability,
-          dashedEllipseCircumferenceMeters: nearestCluster.dashedEllipseCircumferenceMeters,
-          plusMinus100mProbabilityPerCircumferenceMeter: nearestCluster.plusMinus100mProbabilityPerCircumferenceMeter
+          homeStripeProbability: nearestCluster.homeStripeProbability,
+          homeEllipseCircumferenceMeters: nearestCluster.homeEllipseCircumferenceMeters,
+          homeStripePerCircumferenceProbability: nearestCluster.homeStripePerCircumferenceProbability
         });
         drawExtendedVisual(nearestCluster, userPos);
       }).catch(function(err) {
