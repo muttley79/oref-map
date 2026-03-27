@@ -39,7 +39,7 @@ html, body { height: 100%; font-family: Arial, sans-serif; }
 .leaflet-control-zoom a:last-child { border-radius: 0 0 6px 6px !important; }
 body.has-overlay .leaflet-interactive { pointer-events: none !important; }
 @keyframes tapHintFade { 0%,70% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes toastFade { 0%,60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes toastFade { 0%,75% { opacity: 1; } 100% { opacity: 0; } }
 .blue-dot { display: inline-block; width: 12px; height: 12px; background: #4285F4; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 4px rgba(66,133,244,0.5); }
 
 #right-panel {
@@ -326,7 +326,15 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   direction: rtl;
 }
 #menu-sound.sound-open .menu-sub-panel { display: block; }
-#ext-section.ext-open .menu-sub-panel { display: block; }
+#ext-section.ext-open > .menu-sub-panel { display: block; }
+/* "אזור ניסיוני" — footer footnote, visually outside the main menu */
+#ext-section { border-top: 1px solid #d1d5db; margin-top: 4px; }
+#ext-section > .menu-item-row { padding: 6px 16px; color: #9ca3af; }
+#ext-section > .menu-item-row .menu-item-label { font-size: 12px; font-weight: 400; }
+@media (hover: hover) { #ext-section > .menu-item-row:hover { background: transparent; } }
+/* Sub-items: indented + smaller font to signal secondary importance */
+#ext-section .menu-sub-panel .menu-item-row { padding-right: 28px; }
+#ext-section .menu-sub-panel .menu-item-label { font-size: 13px; color: #555; }
 .menu-select-wrap {
   padding: 10px 16px 14px;
   border-top: 1px solid #eee;
@@ -706,6 +714,9 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     padding: 8px 12px;
     font-size: 13px;
     line-height: 1.6;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
   }
   #legend .dot { width: 12px; height: 12px; }
   #status {
@@ -721,8 +732,8 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   #sound-btn, #timeline-btn, #location-btn, #locate-btn, #predict-btn {
     max-height: 36px;
   }
-  #menu-btn { width: 36px; height: 36px; }
-  #menu-panel { top: 56px; }
+  #menu-btn { display: none; }
+  #menu-panel { display: none !important; }
   #gps-row {
     gap: 6px;
   }
@@ -847,43 +858,64 @@ body.idle #right-panel {
       <span class="menu-check"></span>
     </button>
   </div>
-  <div id="menu-sound" class="menu-item">
-    <button id="menu-sound-row" class="menu-item-row" type="button">
-      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
-      <span class="menu-item-label">מצב שקט</span>
+  <div id="menu-predict" class="menu-item">
+    <button class="menu-item-row" type="button">
+      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L12 22M12 2L8 6M12 2L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="currentColor" opacity="0.5"/><circle cx="16" cy="14" r="1.5" fill="currentColor" opacity="0.5"/></svg></span>
+      <span class="menu-item-label">כיוון שיגור</span>
+      <span class="menu-check"></span>
     </button>
-    <div class="menu-sub-panel">
-      <p style="margin:0 0 8px; font-weight:bold;">בחר מיקום לקבלת התרעות קוליות:</p>
-      <input type="text" id="sound-search" placeholder="חפש יישוב..." dir="rtl"
-             style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; margin-bottom:8px; font-size:14px;">
-      <div id="sound-results" style="max-height:160px; overflow-y:auto; border:1px solid #eee; border-radius:6px; margin-bottom:8px;"></div>
-      <div style="display:flex; gap:8px;">
-        <button id="sound-all-btn" style="flex:1; padding:8px; border:none; background:#eee; border-radius:6px; cursor:pointer; font-weight:bold;">כל הארץ</button>
-      </div>
-    </div>
   </div>
-  <div id="ext-section" class="menu-item">
-    <button class="menu-item-row" type="button" id="ext-section-btn">
-      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-      <span class="menu-item-label">לא מומלץ</span>
-      <svg id="ext-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:auto;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+  <div id="menu-pin-labels" class="menu-item active">
+    <button class="menu-item-row" type="button">
+      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <span class="menu-item-label">שמות יישובים</span>
+      <span class="menu-check"></span>
     </button>
-    <div class="menu-sub-panel" style="padding:0">
-      <div id="ellipse-stub" class="menu-item">
-        <button class="menu-item-row" type="button" id="ellipse-enable-btn">
-          <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg></span>
-          <span class="menu-item-label">אליפסה</span>
-          <span class="menu-check"></span>
-        </button>
-      </div>
-      <div id="ext-menu"></div>
-    </div>
+  </div>
+  <div id="menu-cb" class="menu-item">
+    <button class="menu-item-row" type="button">
+      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg></span>
+      <span class="menu-item-label">עיוורי צבעים</span>
+      <span class="menu-check"></span>
+    </button>
   </div>
   <div id="menu-about" class="menu-item">
     <button class="menu-item-row" type="button">
       <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg></span>
       <span class="menu-item-label">אודות</span>
     </button>
+  </div>
+  <div id="ext-section" class="menu-item">
+    <button class="menu-item-row" type="button" id="ext-section-btn">
+      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+      <span class="menu-item-label">אזור ניסיוני</span>
+      <svg id="ext-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:auto;transition:transform 0.2s;opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="menu-sub-panel" style="padding:0">
+      <div id="menu-sound" class="menu-item">
+        <button id="menu-sound-row" class="menu-item-row" type="button">
+          <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
+          <span class="menu-item-label">מצב שקט</span>
+        </button>
+        <div class="menu-sub-panel">
+          <p style="margin:0 0 8px; font-weight:bold;">בחר מיקום לקבלת התרעות קוליות:</p>
+          <input type="text" id="sound-search" placeholder="חפש יישוב..." dir="rtl"
+                 style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; margin-bottom:8px; font-size:14px;">
+          <div id="sound-results" style="max-height:160px; overflow-y:auto; border:1px solid #eee; border-radius:6px; margin-bottom:8px;"></div>
+          <div style="display:flex; gap:8px;">
+            <button id="sound-all-btn" style="flex:1; padding:8px; border:none; background:#eee; border-radius:6px; cursor:pointer; font-weight:bold;">כל הארץ</button>
+          </div>
+        </div>
+      </div>
+      <div id="ellipse-stub" class="menu-item">
+        <button class="menu-item-row" type="button" id="ellipse-enable-btn">
+          <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="6" transform="rotate(-15 12 12)"/></svg></span>
+          <span class="menu-item-label">אליפסה</span>
+          <span class="menu-check"></span>
+        </button>
+      </div>
+      <div id="ext-menu"></div>
+    </div>
   </div>
 </div>
 
@@ -966,8 +998,8 @@ body.idle #right-panel {
   <button class="mb-btn" id="mb-timeline" title="ציר זמן">
     <svg width="22" height="22" viewBox="0 0 100 100"><path d="M48,8 L26,26 L48,44 L48,34 C62,34 74,46 74,60 C74,74 62,86 48,86 C38,86 30,80 26,72 L18,76 C24,88 35,96 48,96 C68,96 84,80 84,60 C84,40 68,24 48,24 L48,8Z" fill="#A1C2FA" stroke="#333" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="60" r="26" fill="white" stroke="#333" stroke-width="3"/><g stroke="#333" stroke-width="4" stroke-linecap="round"><line x1="48" y1="60" x2="38" y2="52"/><line x1="48" y1="60" x2="32" y2="68"/></g><circle cx="48" cy="60" r="3.5" fill="#A1C2FA" stroke="#333" stroke-width="2"/><g stroke="#333" stroke-width="2.5" stroke-linecap="round"><line x1="48" y1="39" x2="48" y2="43"/><line x1="69" y1="60" x2="65" y2="60"/><line x1="48" y1="81" x2="48" y2="77"/><line x1="27" y1="60" x2="31" y2="60"/></g></svg>
   </button>
-  <button class="mb-btn" id="mb-ellipse" title="אליפסה">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
+  <button class="mb-btn" id="mb-pin" title="שמות יישובים">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
   </button>
 </div>
 <script>
@@ -1019,7 +1051,7 @@ body.idle #right-panel {
     }
   })();
 
-  // "לא מומלץ" section toggle
+  // "אזור ניסיוני" section toggle
   document.getElementById('ext-section-btn').addEventListener('click', function() {
     var open = document.getElementById('ext-section').classList.toggle('ext-open');
     document.getElementById('ext-chevron').style.transform = open ? 'rotate(180deg)' : '';
@@ -1112,9 +1144,9 @@ body.idle #right-panel {
   function showToast(msg) {
     var el = document.createElement('div');
     el.textContent = msg;
-    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:1001;direction:rtl;text-align:center;animation:toastFade 3s forwards;pointer-events:none;';
+    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:1001;direction:rtl;text-align:center;animation:toastFade 4s forwards;pointer-events:none;';
     document.body.appendChild(el);
-    setTimeout(function() { el.remove(); }, 3000);
+    setTimeout(function() { el.remove(); }, 4000);
   }
 
   // --- User location ---
@@ -1827,6 +1859,8 @@ body.idle #right-panel {
     predictionActive = !predictionActive;
     localStorage.setItem('oref-predict', predictionActive);
     document.getElementById('predict-btn').classList.toggle('active', predictionActive);
+    var pm = document.getElementById('menu-predict');
+    if (pm) pm.classList.toggle('active', predictionActive);
     if (predictionActive) {
       showToast('חיזוי כיוון שיגור מופעל');
       updatePredictionLines();
@@ -2369,16 +2403,18 @@ body.idle #right-panel {
   }
 
   function getActiveEventBounds() {
-    var bounds = null;
+    var allBounds = null;
     for (var name in locationStates) {
-      var s = locationStates[name].state;
-      if (s !== 'red' && s !== 'purple') continue;
+      if (locationStates[name].state === 'green') continue;
       var polygon = locationPolygons[name];
       if (!polygon) continue;
-      var b = polygon.getBounds();
-      if (!bounds) bounds = L.latLngBounds(b); else bounds.extend(b);
+      if (!allBounds) {
+        allBounds = L.latLngBounds(polygon.getBounds());
+      } else {
+        allBounds.extend(polygon.getBounds());
+      }
     }
-    return bounds;
+    return allBounds;
   }
 
   function maybeZoomToEvent() {
@@ -3693,17 +3729,19 @@ body.idle #right-panel {
       { mb: 'mb-zoom',     src: 'locate-btn',   watch: ['auto-follow-active'] },
       { mb: 'mb-gps',      src: 'location-btn', watch: ['active'] },
       { mb: 'mb-predict',  src: 'predict-btn',  watch: ['active'] },
-      { mb: 'mb-sound',    src: 'sound-btn',    watch: ['active'] },
+      { mb: 'mb-sound',    src: 'menu-sound',   watch: ['sound-open'] },
       { mb: 'mb-timeline', src: 'timeline-btn', watch: ['open'] },
-      { mb: 'mb-ellipse',  src: 'ellipse-stub', watch: ['active'] },
+      { mb: 'mb-pin',      src: 'menu-pin-labels', watch: ['active'] },
     ];
     watches.forEach(function(pair) {
       var mbBtn = document.getElementById(pair.mb);
       var srcEl = document.getElementById(pair.src);
       if (!mbBtn || !srcEl) return;
-      new MutationObserver(function() {
+      function sync() {
         mbBtn.classList.toggle('active', pair.watch.some(function(c) { return srcEl.classList.contains(c); }));
-      }).observe(srcEl, { attributes: true, attributeFilter: ['class'] });
+      }
+      sync(); // initial state
+      new MutationObserver(sync).observe(srcEl, { attributes: true, attributeFilter: ['class'] });
     });
 
     document.getElementById('mb-zoom').addEventListener('click', function() {
@@ -3717,14 +3755,76 @@ body.idle #right-panel {
     });
     document.getElementById('mb-sound').addEventListener('click', function(e) {
       e.stopPropagation();
-      document.getElementById('sound-btn-row').click();
+      var menuPanel = document.getElementById('menu-panel');
+      if (menuPanel.style.display !== 'block') {
+        document.getElementById('menu-btn').click();
+      }
+      if (!document.getElementById('ext-section').classList.contains('ext-open')) {
+        document.getElementById('ext-section-btn').click();
+      }
+      document.getElementById('menu-sound-row').click();
     });
     document.getElementById('mb-timeline').addEventListener('click', function() {
       document.getElementById('timeline-btn-row').click();
     });
-    document.getElementById('mb-ellipse').addEventListener('click', function() {
-      document.getElementById('ellipse-enable-btn').click();
+    document.getElementById('mb-pin').addEventListener('click', function() {
+      document.getElementById('menu-pin-labels').querySelector('.menu-item-row').click();
     });
+  })();
+
+  // --- Menu: Predict ---
+  (function() {
+    var predictMenu = document.getElementById('menu-predict');
+    if (predictionActive) predictMenu.classList.add('active');
+    predictMenu.querySelector('.menu-item-row').addEventListener('click', function() {
+      document.getElementById('predict-btn').click();
+      predictMenu.classList.toggle('active', predictionActive);
+    });
+  })();
+
+  // --- Menu: Pin labels ---
+  (function() {
+    var pinMenu = document.getElementById('menu-pin-labels');
+    try {
+      if (localStorage.getItem('oref-pin-labels') === '0') {
+        pinMenu.classList.remove('active');
+        document.getElementById('map').classList.add('pins-hidden');
+      }
+    } catch(e) {}
+    pinMenu.querySelector('.menu-item-row').addEventListener('click', function() {
+      var show = pinMenu.classList.toggle('active');
+      document.getElementById('map').classList.toggle('pins-hidden', !show);
+      showToast(show ? 'הראה שמות יישובים' : 'הסתר שמות יישובים');
+      try { localStorage.setItem('oref-pin-labels', show ? '1' : '0'); } catch(e) {}
+    });
+  })();
+
+  // --- Menu: Colorblind ---
+  (function() {
+    var cbMenu = document.getElementById('menu-cb');
+    try {
+      if (localStorage.getItem('oref-cb-mode') === '1') {
+        cbMenu.classList.add('active');
+        document.body.classList.add('colorblind-mode');
+        COLORS.red    = COLORS_CB.red;
+        COLORS.purple = COLORS_CB.purple;
+        COLORS.yellow = COLORS_CB.yellow;
+        COLORS.green  = COLORS_CB.green;
+      }
+    } catch(e) {}
+    function toggleCb() {
+      var cb = cbMenu.classList.toggle('active');
+      document.body.classList.toggle('colorblind-mode', cb);
+      COLORS.red    = cb ? COLORS_CB.red    : '#ff0000';
+      COLORS.purple = cb ? COLORS_CB.purple : '#9922cc';
+      COLORS.yellow = cb ? COLORS_CB.yellow : '#ffcc00';
+      COLORS.green  = cb ? COLORS_CB.green  : '#00cc00';
+      reApplyColors();
+      showToast(cb ? 'מצב עיוורי צבעים מופעל' : 'מצב עיוורי צבעים כובה');
+      try { localStorage.setItem('oref-cb-mode', cb ? '1' : ''); } catch(e) {}
+    }
+    cbMenu.querySelector('.menu-item-row').addEventListener('click', toggleCb);
+    document.getElementById('legend').addEventListener('click', toggleCb);
   })();
 
   // --- Menu: About ---
