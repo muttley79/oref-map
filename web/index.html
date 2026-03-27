@@ -2754,10 +2754,17 @@ body.idle #right-panel {
   });
   var ellipseModeController = null;
   var ellipseDisplayMode = 0;
+  try {
+    var savedEllipseMode = Number(localStorage.getItem('oref-ellipse-mode'));
+    if ([0, 1, 2].indexOf(savedEllipseMode) !== -1) {
+      ellipseDisplayMode = savedEllipseMode;
+    }
+  } catch (e) {}
   function applyEllipseDisplayMode(nextMode, opts) {
     if (!ellipseModeController) return Promise.resolve();
     ellipseDisplayMode = nextMode;
     if (menuEllipseSelect) menuEllipseSelect.value = String(nextMode);
+    try { localStorage.setItem('oref-ellipse-mode', String(nextMode)); } catch (e) {}
     if (ellipseDisplayMode === 0) {
       ellipseModeController.setDisplayMode(0);
       return ellipseModeController.setEnabled(false, opts || {});
@@ -2784,7 +2791,7 @@ body.idle #right-panel {
       getCurrentViewTime: function() { return currentViewTime; },
       showToast: showToast
     });
-    applyEllipseDisplayMode(0);
+    applyEllipseDisplayMode(ellipseDisplayMode);
     menuEllipseSelect.addEventListener('change', function() {
       applyEllipseDisplayMode(Number(menuEllipseSelect.value), { showToast: true });
     });
