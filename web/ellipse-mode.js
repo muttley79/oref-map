@@ -83,7 +83,7 @@
 
       var normalizedValue = percentValue / 100;
       if (!Number.isFinite(normalizedValue)) return null;
-      if (normalizedValue === 0) return '0.' + '0'.repeat(fractionDigits || 2) + ' E+00';
+      if (normalizedValue === 0) return '0E+00';
 
       var scientific = normalizedValue.toExponential(
         Number.isFinite(fractionDigits) ? fractionDigits : 2
@@ -91,12 +91,13 @@
       var parts = scientific.split('e');
       if (parts.length !== 2) return scientific;
 
+      var mantissa = String(parts[0]).split('.')[0];
       var exponent = Number(parts[1]);
       if (!Number.isFinite(exponent)) return scientific;
 
       var exponentSign = exponent >= 0 ? '+' : '-';
       var exponentDigits = String(Math.abs(exponent)).padStart(2, '0');
-      return parts[0] + ' E' + exponentSign + exponentDigits;
+      return mantissa + 'E' + exponentSign + exponentDigits;
     }
 
     function escapeHtml(str) {
@@ -868,15 +869,15 @@
           return;
         }
         populateSelectedClusterProbability(nearestCluster, userPos);
-        console.log({
-          cluster: nearestCluster.label,
-          normalizedDistanceRatio: nearestCluster.normalizedDistanceRatio,
-          centerDistanceMeters: nearestCluster.centerDistanceMeters,
-          directionalRadiusMeters: nearestCluster.directionalRadiusMeters,
-          homeStripeProbability: nearestCluster.homeStripeProbability,
-          homeEllipseCircumferenceMeters: nearestCluster.homeEllipseCircumferenceMeters,
-          homeStripePerCircumferenceProbability: nearestCluster.homeStripePerCircumferenceProbability
-        });
+        console.log(
+          `cluster=${nearestCluster.label}, ` +
+          `normalizedDistanceRatio=${nearestCluster.normalizedDistanceRatio.toFixed(6)}, ` +
+          `centerDistanceMeters=${nearestCluster.centerDistanceMeters.toFixed(2)}, ` +
+          `directionalRadiusMeters=${nearestCluster.directionalRadiusMeters.toFixed(2)}, ` +
+          `homeStripeProbability=${nearestCluster.homeStripeProbability.toExponential(3)}, ` +
+          `homeEllipseCircumferenceMeters=${nearestCluster.homeEllipseCircumferenceMeters.toFixed(2)}, ` +
+          `homeStripePerCircumferenceProbability=${nearestCluster.homeStripePerCircumferenceProbability}`
+        );
         drawExtendedVisual(nearestCluster, userPos);
       }).catch(function(err) {
         clearExtendedVisual();
