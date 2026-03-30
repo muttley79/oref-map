@@ -3,6 +3,16 @@ const OREF_HEADERS = {
   'X-Requested-With': 'XMLHttpRequest',
 };
 
+const ALLOWED_ORIGINS = [
+  'https://oref-map.org',
+  'https://oref.arnonsegal.com',
+];
+
+function getAllowedOrigin(request) {
+  const origin = request.headers.get('Origin') || '';
+  return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+}
+
 const ROUTES = {
   '/api2/alerts': 'https://www.oref.org.il/warningMessages/alert/Alerts.json',
   '/api2/history': 'https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json',
@@ -13,16 +23,17 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const target = ROUTES[url.pathname];
+    const allowedOrigin = getAllowedOrigin(request);
     if (!target) return new Response('Not found', {
       status: 404,
-      headers: { 'Access-Control-Allow-Origin': 'https://oref-map.org' },
+      headers: { 'Access-Control-Allow-Origin': allowedOrigin },
     });
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': 'https://oref-map.org',
+          'Access-Control-Allow-Origin': allowedOrigin,
           'Access-Control-Expose-Headers': 'X-CF-Colo, X-Served-By',
           'Access-Control-Allow-Methods': 'GET',
           'Access-Control-Max-Age': '86400',
@@ -39,7 +50,7 @@ export default {
     if (cached) {
       const resp = new Response(cached.body, cached);
       resp.headers.set('X-CF-Colo', colo);
-      resp.headers.set('Access-Control-Allow-Origin', 'https://oref-map.org');
+      resp.headers.set('Access-Control-Allow-Origin', allowedOrigin);
       resp.headers.set('Access-Control-Expose-Headers', 'X-CF-Colo, X-Served-By');
       return resp;
     }
@@ -53,7 +64,7 @@ export default {
       headers: {
         'Content-Type': resp.ok ? 'application/json; charset=utf-8' : (resp.headers.get('Content-Type') || 'text/plain'),
         'Cache-Control': 's-maxage=4, max-age=3',
-        'Access-Control-Allow-Origin': 'https://oref-map.org',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Expose-Headers': 'X-CF-Colo, X-Served-By',
         'X-CF-Colo': colo,
         'X-Served-By': 'worker',

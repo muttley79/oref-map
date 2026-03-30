@@ -4,15 +4,11 @@ const OREF_HEADERS = {
 };
 
 const PROXY_HOSTS = [
-  'https://orefproxy5.oref-map.org',
-//  'https://orefproxy6.oref-map.org',
-  'https://orefproxy7.oref-map.org',
-  'https://proxy1.oref-proxy1.workers.dev',
+  'https://oref-proxy.arnon-segal.workers.dev',
 ];
 
 const PROXY_HOST_PATTERNS = [
-  /^orefproxy\d+\.oref-map\.org$/,
-  /^proxy\d+\.oref-proxy\d+\.workers\.dev$/,
+  /^oref-proxy\.arnon-segal\.workers\.dev$/,
 ];
 
 function randomProxy() {
