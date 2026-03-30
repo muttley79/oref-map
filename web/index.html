@@ -84,9 +84,11 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
   direction: rtl;
   max-width: calc(100vw - 32px);
 }
+#legend-icon { display: none; line-height: 0; }
 #legend .row { display: flex; align-items: center; gap: 8px; }
 #legend .dot {
-  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+  width: 14px; height: 14px; flex-shrink: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
 .dot-red    { background: #ff0000; }
 .dot-purple { background: #9922cc; }
@@ -714,11 +716,22 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
     padding: 8px 12px;
     font-size: 13px;
     line-height: 1.6;
+    max-height: 140px;
     cursor: pointer;
     user-select: none;
-    -webkit-user-select: none;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-bottom: 3px;
   }
   #legend .dot { width: 12px; height: 12px; }
+  #legend.collapsed {
+    display: flex; padding: 0;
+    align-items: center; justify-content: center;
+    border-radius: 50%;
+    width: 36px; height: 36px; max-height: 36px;
+  }
+  #legend.collapsed .row { display: none; }
+  #legend.collapsed #legend-icon { display: block; }
   #status {
     top: 80px;
     left: 10px;
@@ -887,7 +900,6 @@ body.idle #right-panel {
   </div>
   <div id="ext-section" class="menu-item">
     <button class="menu-item-row" type="button" id="ext-section-btn">
-      <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
       <span class="menu-item-label">אזור ניסיוני</span>
       <svg id="ext-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:auto;transition:transform 0.2s;opacity:0.5"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
@@ -945,6 +957,7 @@ body.idle #right-panel {
 
 <div id="right-panel">
   <div id="legend">
+    <div id="legend-icon"><svg viewBox="0 0 24 24" width="24" height="24"><polygon points="12,1 23,12 12,12" fill="#ff0000"/><polygon points="12,1 12,12 1,12" fill="#ffcc00"/><polygon points="1,12 12,12 12,23" fill="#9922cc"/><polygon points="12,12 23,12 12,23" fill="#00cc00"/></svg></div>
     <div class="row"><div class="dot dot-red"></div><span>ירי רקטות וטילים</span></div>
     <div class="row"><div class="dot dot-purple"></div><span>חדירת כטב״מ</span></div>
     <div class="row"><div class="dot dot-yellow"></div><span>התרעה מוקדמת</span></div>
@@ -1304,7 +1317,7 @@ body.idle #right-panel {
   initUserLocation();
 
   // --- State ---
-  var autoZoomActive = localStorage.getItem('oref-auto-zoom') === 'true';
+  var autoZoomActive = localStorage.getItem('oref-auto-zoom') !== 'disabled';
   var isZoomingProgrammatically = false;
   var autoFollowZoom = autoZoomActive;
 
@@ -1344,8 +1357,7 @@ body.idle #right-panel {
   });
   document.getElementById('menu-zoom').querySelector('.menu-item-row').addEventListener('click', function() {
     autoZoomActive = !autoZoomActive;
-    autoFollowZoom = autoZoomActive;
-    localStorage.setItem('oref-auto-zoom', autoZoomActive);
+    localStorage.setItem('oref-auto-zoom', autoZoomActive ? 'enabled' : 'disabled');
     document.getElementById('menu-zoom').classList.toggle('active', autoZoomActive);
     document.getElementById('locate-btn').classList.toggle('auto-follow-active', autoZoomActive);
     if (autoZoomActive) {
@@ -2315,7 +2327,7 @@ body.idle #right-panel {
       }
     }
     active.sort(function(a, b) { return a.localeCompare(b, 'he'); });
-    console.log(JSON.stringify(active, null, 2));
+    console.log(JSON.stringify(active));
     return active;
   };
 
@@ -3157,7 +3169,7 @@ body.idle #right-panel {
       time = clampTime(time);
       slider.value = Math.min(sliderFromTime(time), 999);
       enterHistoryMode(time);
-      maybeZoomToEvent();
+      if (autoZoomActive) maybeZoomToEvent();
     }
 
     // --- Slider input ---
@@ -3166,7 +3178,7 @@ body.idle #right-panel {
       var time = clampTime(timeFromSlider(parseInt(slider.value)));
       slider.value = sliderFromTime(time);
       enterHistoryMode(time);
-      maybeZoomToEvent();
+      if (autoZoomActive) maybeZoomToEvent();
     });
 
     // --- Timeline bands (show duration of active alerts) ---
@@ -3316,8 +3328,11 @@ body.idle #right-panel {
     }
 
     // --- Play / Pause ---
+    var userWantsPlaying = false;
+
     function stopPlay() {
       isPlaying = false;
+      userWantsPlaying = false;
       playBtn.textContent = '▶';
       if (playRAF) { cancelAnimationFrame(playRAF); playRAF = null; }
       if (playFlyHandler) { map.off('moveend', playFlyHandler); playFlyHandler = null; }
@@ -3342,6 +3357,7 @@ body.idle #right-panel {
     function startPlay() {
 
       isPlaying = true;
+      userWantsPlaying = true;
       playBtn.textContent = '⏸';
       var lastFrame = performance.now();
       var gapEnterFrame = null;
@@ -3397,7 +3413,7 @@ body.idle #right-panel {
         var curIdx = findEventIdx(newTime);
         if (curIdx !== playEventIdx) {
           playEventIdx = curIdx;
-          var bounds = curIdx >= 0 && getActiveEventBounds() ? boundsForEvent(curIdx) : null;
+          var bounds = autoZoomActive && curIdx >= 0 && getActiveEventBounds() ? boundsForEvent(curIdx) : null;
           if (bounds) {
             isZoomingProgrammatically = true;
             isPlaying = false;
@@ -3407,9 +3423,11 @@ body.idle #right-panel {
               map.off('moveend', playFlyHandler);
               playFlyHandler = null;
               isZoomingProgrammatically = false;
-              isPlaying = true;
-              lastFrame = performance.now();
-              playRAF = requestAnimationFrame(tick);
+              if (userWantsPlaying) {
+                isPlaying = true;
+                lastFrame = performance.now();
+                playRAF = requestAnimationFrame(tick);
+              }
             };
             map.on('moveend', playFlyHandler);
             map.flyToBounds(bounds, { padding: [80, 80], maxZoom: 10, duration: 0.7 });
@@ -3423,7 +3441,7 @@ body.idle #right-panel {
     }
 
     playBtn.addEventListener('click', function() {
-      if (isPlaying) stopPlay(); else startPlay();
+      if (userWantsPlaying) stopPlay(); else startPlay();
     });
 
     // --- Speed control ---
@@ -3471,6 +3489,11 @@ body.idle #right-panel {
       // Load favorite markers
       Object.keys(favorites).forEach(function(name) {
         addFavoriteMarker(name, favorites[name]);
+      });
+
+      // Legend collapse toggle (mobile only)
+      document.getElementById('legend').addEventListener('click', function() {
+        if (window.innerWidth <= 480) this.classList.toggle('collapsed');
       });
 
       // Init timeline immediately (button always visible)
