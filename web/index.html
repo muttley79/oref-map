@@ -264,6 +264,7 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
 }
 /* Feature-flag-gated elements: hidden by default, shown when flag is active */
 .f-gated { display: none !important; }
+body.f-predict #menu-predict.f-gated { display: block !important; }
 .menu-item { border-bottom: 1px solid #f0f0f0; }
 .menu-item:last-child { border-bottom: none; }
 .menu-item-row {
@@ -926,7 +927,15 @@ body.idle #right-panel {
           <span class="menu-check"></span>
         </button>
       </div>
-      <div id="ext-menu"></div>
+      <div id="ext-menu">
+        <div id="menu-predict" class="menu-item f-gated">
+          <button class="menu-item-row" type="button" id="predict-enable-btn">
+            <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L12 22M12 2L8 6M12 2L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="currentColor" opacity="0.5"/><circle cx="16" cy="14" r="1.5" fill="currentColor" opacity="0.5"/></svg></span>
+            <span class="menu-item-label">כיוון שיגור</span>
+            <span class="menu-check"></span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -992,7 +1001,6 @@ body.idle #right-panel {
 <!-- Hidden delegation targets for mobile-bar (not shown in UI) -->
 <button id="locate-btn" type="button" style="display:none"></button>
 <button id="location-btn" type="button" style="display:none"><div id="location-btn-row"></div></button>
-<button id="predict-btn" type="button" style="display:none"></button>
 <div id="sound-btn" style="display:none"><div id="sound-btn-row"></div></div>
 
 <div id="mobile-bar">
@@ -1083,6 +1091,29 @@ body.idle #right-panel {
     };
     document.head.appendChild(s);
   });
+
+  // Prediction: lazy-load on first enable or auto-load if previously enabled
+  (function() {
+    var loaded = false;
+    function load(atStartup) {
+      if (loaded) return;
+      loaded = true;
+      if (atStartup) _extPending++;
+      var s = document.createElement('script');
+      s.src = '/prediction-mode.js';
+      if (atStartup) {
+        s.onload = s.onerror = function() { _extPending--; _maybeDispatchReady(); };
+      } else {
+        try { localStorage.setItem('oref-predict', 'true'); } catch (e) {}
+        s.onerror = function() { loaded = false; try { localStorage.removeItem('oref-predict'); } catch (e) {} };
+      }
+      document.head.appendChild(s);
+    }
+    if (FF.predict) {
+      try { if (localStorage.getItem('oref-predict') === 'true') load(true); } catch (e) {}
+      document.getElementById('predict-enable-btn').addEventListener('click', function() { load(false); });
+    }
+  })();
 
   // --- Debug overlay (append console.warn/error to on-screen log when ?f-log) ---
   if (FF.log) {
@@ -1675,6 +1706,11 @@ body.idle #right-panel {
     return latlng[0] >= 29.4 && latlng[0] <= 33.4 && latlng[1] >= 34.2 && latlng[1] <= 35.9;
   }
 
+  // Normalize Hebrew geresh/gershayim (׳/״) to ASCII apostrophes to match geo lookup keys
+  function normalizeGeresh(s) {
+    return s.replace(/\u05F4/g, "''").replace(/\u05F3/g, "'");
+  }
+
   // --- Build pre-computed polygons from locations_polygons.json ---
   function buildPolygons(data) {
     for (var name in data) {
@@ -1843,7 +1879,6 @@ body.idle #right-panel {
     }
 
     playSoundForState(state, name);
-    updatePredictionLines();
   }
 
   function removeLocation(name) {
@@ -1854,198 +1889,8 @@ body.idle #right-panel {
       entry.marker.closePopup();
     }
     delete locationStates[name];
-    updatePredictionLines();
   }
 
-  // --- Launch source prediction ---
-  var predictionLines = [];  // L.polyline instances on the map
-  var predictionActive = localStorage.getItem('oref-predict') === 'true';
-  var PREDICTION_LINE_EXTEND = 1.5; // degrees (~167 km) to extend the line beyond the centroid
-  var PREDICTION_CLUSTER_THRESHOLD = 0.15; // degrees (~17 km) for grouping alerts into salvos
-
-  if (predictionActive) {
-    document.getElementById('predict-btn').classList.add('active');
-  }
-
-  document.getElementById('predict-btn').addEventListener('click', function() {
-    predictionActive = !predictionActive;
-    localStorage.setItem('oref-predict', predictionActive);
-    document.getElementById('predict-btn').classList.toggle('active', predictionActive);
-    var pm = document.getElementById('menu-predict');
-    if (pm) pm.classList.toggle('active', predictionActive);
-    if (predictionActive) {
-      showToast('חיזוי כיוון שיגור מופעל');
-      updatePredictionLines();
-    } else {
-      showToast('חיזוי כיוון שיגור כובה');
-      clearPredictionLines();
-    }
-  });
-
-  function clearPredictionLines() {
-    for (var i = 0; i < predictionLines.length; i++) {
-      map.removeLayer(predictionLines[i]);
-    }
-    predictionLines = [];
-  }
-
-  // Compute centroid of a Leaflet polygon (outer ring)
-  function polygonCentroid(poly) {
-    var rings = poly.getLatLngs();
-    var outer = Array.isArray(rings[0]) && rings[0].length && rings[0][0].lat !== undefined ? rings[0] : rings;
-    var sumLat = 0, sumLng = 0;
-    for (var i = 0; i < outer.length; i++) {
-      sumLat += outer[i].lat;
-      sumLng += outer[i].lng;
-    }
-    return [sumLat / outer.length, sumLng / outer.length];
-  }
-
-  // Cluster 2D points by proximity (single-linkage). Returns array of point-arrays.
-  function clusterPoints(points, threshold) {
-    var n = points.length;
-    var parent = [];
-    for (var i = 0; i < n; i++) parent[i] = i;
-    function find(i) {
-      while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
-      return i;
-    }
-    var t2 = threshold * threshold;
-    for (var i = 0; i < n; i++) {
-      for (var j = i + 1; j < n; j++) {
-        if (find(i) === find(j)) continue;
-        var dl = points[i][0] - points[j][0], dg = points[i][1] - points[j][1];
-        if (dl * dl + dg * dg <= t2) parent[find(i)] = find(j);
-      }
-    }
-    var groups = {};
-    for (var i = 0; i < n; i++) {
-      var root = find(i);
-      if (!groups[root]) groups[root] = [];
-      groups[root].push(points[i]);
-    }
-    return Object.keys(groups).map(function(k) { return groups[k]; });
-  }
-
-  // Fit a line through points using PCA (principal component). Returns {center, direction}.
-  function fitLine(points) {
-    var n = points.length;
-    if (n < 2) return null;
-
-    // Compute centroid
-    var cx = 0, cy = 0;
-    for (var i = 0; i < n; i++) { cx += points[i][0]; cy += points[i][1]; }
-    cx /= n; cy /= n;
-
-    // Covariance matrix entries
-    var cxx = 0, cxy = 0, cyy = 0;
-    for (var i = 0; i < n; i++) {
-      var dx = points[i][0] - cx, dy = points[i][1] - cy;
-      cxx += dx * dx;
-      cxy += dx * dy;
-      cyy += dy * dy;
-    }
-
-    // Principal eigenvector of 2x2 covariance matrix
-    // Eigenvalues of [[cxx,cxy],[cxy,cyy]]:
-    // lambda = ((cxx+cyy) ± sqrt((cxx-cyy)^2 + 4*cxy^2)) / 2
-    var diff = cxx - cyy;
-    var disc = Math.sqrt(diff * diff + 4 * cxy * cxy);
-    var lambda1 = (cxx + cyy + disc) / 2;
-
-    // Eigenvector for lambda1
-    var vx, vy;
-    if (Math.abs(cxy) > 1e-12) {
-      vx = lambda1 - cyy;
-      vy = cxy;
-    } else if (cxx >= cyy) {
-      vx = 1; vy = 0;
-    } else {
-      vx = 0; vy = 1;
-    }
-    // Normalize
-    var len = Math.sqrt(vx * vx + vy * vy);
-    if (len > 0) { vx /= len; vy /= len; }
-
-    return { center: [cx, cy], direction: [vx, vy] };
-  }
-
-  function updatePredictionLines() {
-    clearPredictionLines();
-    if (!predictionActive) return;
-
-    // Collect centroids of active red/purple locations
-    var points = [];
-    for (var name in locationStates) {
-      var entry = locationStates[name];
-      if (!entry || (entry.state !== 'red' && entry.state !== 'purple')) continue;
-      var poly = locationPolygons[name];
-      if (!poly) continue;
-      points.push(polygonCentroid(poly));
-    }
-
-    if (points.length < 2) return;
-
-    // Cluster alerts into separate salvos/events
-    var clusters = clusterPoints(points, PREDICTION_CLUSTER_THRESHOLD);
-
-    for (var ci = 0; ci < clusters.length; ci++) {
-      var cluster = clusters[ci];
-      if (cluster.length < 2) continue;
-
-      var line = fitLine(cluster);
-      if (!line) continue;
-
-      var cx = line.center[0], cy = line.center[1];
-      var dx = line.direction[0], dy = line.direction[1];
-
-      // Find the extent of the cluster along the line direction
-      var minProj = Infinity, maxProj = -Infinity;
-      for (var i = 0; i < cluster.length; i++) {
-        var proj = (cluster[i][0] - cx) * dx + (cluster[i][1] - cy) * dy;
-        if (proj < minProj) minProj = proj;
-        if (proj > maxProj) maxProj = proj;
-      }
-
-      // Extend the line beyond the cluster in both directions
-      var ext = PREDICTION_LINE_EXTEND;
-      var p1 = [cx + (minProj - ext) * dx, cy + (minProj - ext) * dy];
-      var p2 = [cx + (maxProj + ext) * dx, cy + (maxProj + ext) * dy];
-
-      // Draw the extended line (dashed)
-      var polyline = L.polyline([p1, p2], {
-        color: '#ff4444',
-        weight: 2.5,
-        opacity: 0.7,
-        dashArray: '10, 8',
-        interactive: false
-      }).addTo(map);
-      predictionLines.push(polyline);
-
-      // Draw small arrow markers at both ends to indicate possible source directions
-      var arrowSize = 0.06; // degrees
-      var ends = [
-        { point: p1, sign: -1 },
-        { point: p2, sign: 1 }
-      ];
-      for (var ei = 0; ei < ends.length; ei++) {
-        var ep = ends[ei].point;
-        var s = ends[ei].sign;
-        // Perpendicular direction for arrowhead
-        var px = -dy, py = dx;
-        var tip = [ep[0] + s * dx * arrowSize, ep[1] + s * dy * arrowSize];
-        var left = [ep[0] + px * arrowSize * 0.5, ep[1] + py * arrowSize * 0.5];
-        var right = [ep[0] - px * arrowSize * 0.5, ep[1] - py * arrowSize * 0.5];
-        var arrow = L.polyline([left, tip, right], {
-          color: '#ff4444',
-          weight: 2.5,
-          opacity: 0.7,
-          interactive: false
-        }).addTo(map);
-        predictionLines.push(arrow);
-      }
-    }
-  }
 
   // --- Alert history per location ---
   var openPopupName = null;
@@ -2299,7 +2144,7 @@ body.idle #right-panel {
     lastLiveAlertId = alert.id;
     var now = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date());
     for (var i = 0; i < locations.length; i++) {
-      var loc = locations[i];
+      var loc = normalizeGeresh(locations[i]);
       recordHistory(loc, title, now, state);
       if (isLiveMode) {
         setLocationState(loc, state);
@@ -2331,12 +2176,24 @@ body.idle #right-panel {
     return active;
   };
 
+  window.printRedAlertLocations = function() {
+    var red = [];
+    for (var name in locationStates) {
+      if (locationStates[name] && locationStates[name].state === 'red') {
+        red.push(name);
+      }
+    }
+    red.sort(function(a, b) { return a.localeCompare(b, 'he'); });
+    console.log(JSON.stringify(red));
+    return red;
+  };
+
   function processHistoryEntry(entry) {
     if (!entry || !entry.data || !entry.title) return;
     var title = entry.title.replace(/\s+/g, ' ').trim();
     var state = classifyTitle(title);
     // History `data` is a string (single location)
-    var location = (typeof entry.data === 'string' ? entry.data : String(entry.data)).trim();
+    var location = normalizeGeresh((typeof entry.data === 'string' ? entry.data : String(entry.data)).trim());
     var since = parseAlertDate(entry.alertDate) || Date.now();
     if (state !== 'green' && since > lastDangerTime) lastDangerTime = since;
     recordHistory(location, title, entry.alertDate || '', state);
@@ -2644,7 +2501,7 @@ body.idle #right-panel {
         var rid = String(e.rid || '');
         var title = (e.category_desc || '').replace(/\s+/g, ' ').trim();
         var state = classifyTitle(title);
-        var location = (typeof e.data === 'string' ? e.data : String(e.data)).trim();
+        var location = normalizeGeresh((typeof e.data === 'string' ? e.data : String(e.data)).trim());
         var ts = parseAlertDate(e.alertDate);
         if (!ts) continue;
         var compositeKey = location + '|' + (e.alertDate || '').replace('T', ' ');
@@ -2761,7 +2618,6 @@ body.idle #right-panel {
       locationStates[loc] = { state: s, since: sinceTime, marker: polygon };
       if (s === 'red') addAlertPin(loc, false);
     }
-    updatePredictionLines();
     document.dispatchEvent(new CustomEvent('app:stateChanged'));
   }
 
@@ -3751,7 +3607,7 @@ body.idle #right-panel {
     var watches = [
       { mb: 'mb-zoom',     src: 'locate-btn',   watch: ['auto-follow-active'] },
       { mb: 'mb-gps',      src: 'location-btn', watch: ['active'] },
-      { mb: 'mb-predict',  src: 'predict-btn',  watch: ['active'] },
+      { mb: 'mb-predict',  src: 'menu-predict', watch: ['active'] },
       { mb: 'mb-sound',    src: 'menu-sound',   watch: ['sound-open'] },
       { mb: 'mb-timeline', src: 'timeline-btn', watch: ['open'] },
       { mb: 'mb-pin',      src: 'menu-pin-labels', watch: ['active'] },
@@ -3774,7 +3630,7 @@ body.idle #right-panel {
       document.getElementById('location-btn-row').click();
     });
     document.getElementById('mb-predict').addEventListener('click', function() {
-      document.getElementById('predict-btn').click();
+      document.getElementById('predict-enable-btn').click();
     });
     document.getElementById('mb-sound').addEventListener('click', function(e) {
       e.stopPropagation();
@@ -3792,16 +3648,6 @@ body.idle #right-panel {
     });
     document.getElementById('mb-pin').addEventListener('click', function() {
       document.getElementById('menu-pin-labels').querySelector('.menu-item-row').click();
-    });
-  })();
-
-  // --- Menu: Predict ---
-  (function() {
-    var predictMenu = document.getElementById('menu-predict');
-    if (predictionActive) predictMenu.classList.add('active');
-    predictMenu.querySelector('.menu-item-row').addEventListener('click', function() {
-      document.getElementById('predict-btn').click();
-      predictMenu.classList.toggle('active', predictionActive);
     });
   })();
 
