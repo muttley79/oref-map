@@ -264,7 +264,6 @@ body.has-overlay .leaflet-interactive { pointer-events: none !important; }
 }
 /* Feature-flag-gated elements: hidden by default, shown when flag is active */
 .f-gated { display: none !important; }
-body.f-predict #menu-predict.f-gated { display: block !important; }
 .menu-item { border-bottom: 1px solid #f0f0f0; }
 .menu-item:last-child { border-bottom: none; }
 .menu-item-row {
@@ -928,13 +927,6 @@ body.idle #right-panel {
         </button>
       </div>
       <div id="ext-menu">
-        <div id="menu-predict" class="menu-item f-gated">
-          <button class="menu-item-row" type="button" id="predict-enable-btn">
-            <span class="menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L12 22M12 2L8 6M12 2L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="2" fill="currentColor"/><circle cx="8" cy="14" r="1.5" fill="currentColor" opacity="0.5"/><circle cx="16" cy="14" r="1.5" fill="currentColor" opacity="0.5"/></svg></span>
-            <span class="menu-item-label">כיוון שיגור</span>
-            <span class="menu-check"></span>
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -1027,6 +1019,11 @@ body.idle #right-panel {
 (function() {
   'use strict';
 
+  // Lock to portrait in standalone PWA mode (Android Chrome)
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait-primary').catch(function() {});
+  }
+
   var pageParams = new URLSearchParams(location.search);
 
   // --- Feature flags (URL params with f- prefix, e.g. ?f-log&f-ellipse) ---
@@ -1109,10 +1106,8 @@ body.idle #right-panel {
       }
       document.head.appendChild(s);
     }
-    if (FF.predict) {
-      try { if (localStorage.getItem('oref-predict') === 'true') load(true); } catch (e) {}
-      document.getElementById('predict-enable-btn').addEventListener('click', function() { load(false); });
-    }
+    try { if (localStorage.getItem('oref-predict') === 'true') load(true); } catch (e) {}
+    document.getElementById('menu-predict').querySelector('.menu-item-row').addEventListener('click', function() { load(false); });
   })();
 
   // --- Debug overlay (append console.warn/error to on-screen log when ?f-log) ---
@@ -3630,7 +3625,7 @@ body.idle #right-panel {
       document.getElementById('location-btn-row').click();
     });
     document.getElementById('mb-predict').addEventListener('click', function() {
-      document.getElementById('predict-enable-btn').click();
+      document.getElementById('menu-predict').querySelector('.menu-item-row').click();
     });
     document.getElementById('mb-sound').addEventListener('click', function(e) {
       e.stopPropagation();
